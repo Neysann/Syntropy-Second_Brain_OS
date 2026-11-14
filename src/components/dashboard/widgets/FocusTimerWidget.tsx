@@ -1,14 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Timer, Play, Pause, RotateCcw, Settings, Flame, Bell, Coffee, Zap } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 import { FocusTimerWidgetSettings, WidgetSize } from '@/types/dashboard';
-import {
-  loadPomodoroSyncState,
-  broadcastPomodoroState,
-  subscribeSyntropySync,
-} from '@/lib/islandSync';
 
 interface FocusTimerWidgetProps {
   size?: WidgetSize;
@@ -38,48 +33,7 @@ export const FocusTimerWidget: React.FC<FocusTimerWidgetProps> = ({
     return 0;
   });
 
-  const isApplyingExternalSyncRef = useRef(false);
-
-  // Hydratation initiale et synchronisation inter-fenêtres (Dynamic Island <-> Dashboard)
-  useEffect(() => {
-    const initial = loadPomodoroSyncState(focusMinutes);
-    isApplyingExternalSyncRef.current = true;
-    setMode(initial.mode);
-    setTimeLeft(initial.timeLeft);
-    setIsRunning(initial.isRunning);
-    setCompletedSessions(initial.completedSessions);
-    setTimeout(() => {
-      isApplyingExternalSyncRef.current = false;
-    }, 50);
-
-    const unsub = subscribeSyntropySync((msg) => {
-      if (msg.type === 'pomodoro-sync') {
-        isApplyingExternalSyncRef.current = true;
-        setMode(msg.state.mode);
-        setTimeLeft(msg.state.timeLeft);
-        setIsRunning(msg.state.isRunning);
-        setCompletedSessions(msg.state.completedSessions);
-        setTimeout(() => {
-          isApplyingExternalSyncRef.current = false;
-        }, 50);
-      }
-    });
-    return () => unsub();
-  }, []);
-
   const totalTime = mode === 'focus' ? focusMinutes * 60 : breakMinutes * 60;
-
-  // Broadcast vers la Dynamic Island lors des changements d'état
-  useEffect(() => {
-    if (isApplyingExternalSyncRef.current) return;
-    broadcastPomodoroState({
-      mode,
-      timeLeft,
-      totalTime,
-      isRunning,
-      completedSessions,
-    });
-  }, [isRunning, mode, completedSessions]);
 
   // Signal sonore Web Audio doux à la fin
   const playAlertSound = () => {
@@ -140,26 +94,12 @@ export const FocusTimerWidget: React.FC<FocusTimerWidgetProps> = ({
     setMode(newMode);
     setIsRunning(false);
     setTimeLeft(nextTime);
-    broadcastPomodoroState({
-      mode: newMode,
-      timeLeft: nextTime,
-      totalTime: nextTime,
-      isRunning: false,
-      completedSessions,
-    });
   };
 
   const handleReset = () => {
     const nextTime = mode === 'focus' ? focusMinutes * 60 : breakMinutes * 60;
     setIsRunning(false);
     setTimeLeft(nextTime);
-    broadcastPomodoroState({
-      mode,
-      timeLeft: nextTime,
-      totalTime: nextTime,
-      isRunning: false,
-      completedSessions,
-    });
   };
 
   const setCustomMinutes = (mins: number) => {
@@ -167,13 +107,6 @@ export const FocusTimerWidget: React.FC<FocusTimerWidgetProps> = ({
     setIsRunning(false);
     setMode('focus');
     setTimeLeft(nextTime);
-    broadcastPomodoroState({
-      mode: 'focus',
-      timeLeft: nextTime,
-      totalTime: nextTime,
-      isRunning: false,
-      completedSessions,
-    });
   };
 
   const minutes = Math.floor(timeLeft / 60);

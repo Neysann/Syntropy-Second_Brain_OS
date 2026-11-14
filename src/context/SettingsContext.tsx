@@ -178,22 +178,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const root = document.documentElement;
     const body = document.body;
 
-    // Isolation stricte de la fenêtre Dynamic Island : évite toute mutation CSS globale (#000000 OLED/Nothing, overrides !important) lors des changements de thème
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dynamic-island')) {
-      root.setAttribute('data-island-window', 'true');
-      root.classList.add('dark');
-      body.classList.add('dark');
-      root.classList.remove('light', 'oled', 'nothing-os-mode', 'cyberpunk-mode', 'neon-vibrant', 'neon-subtle', 'neon-none');
-      body.classList.remove('light', 'oled', 'nothing-os-mode', 'cyberpunk-mode', 'neon-vibrant', 'neon-subtle', 'neon-none', 'bg-zinc-950');
-      ['data-ui-style', 'data-dark-bg', 'data-accent', 'data-neon', 'data-theme'].forEach((attr) => {
-        root.removeAttribute(attr);
-        body.removeAttribute(attr);
-      });
-      root.style.setProperty('background', 'transparent', 'important');
-      body.style.setProperty('background', 'transparent', 'important');
-      return;
-    }
-
     // A. Thème (dark / light)
     root.classList.remove('dark', 'light');
     body.classList.remove('dark', 'light');

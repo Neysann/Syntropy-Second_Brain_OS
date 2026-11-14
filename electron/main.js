@@ -3,7 +3,6 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const { setupAutoUpdater, registerAutoUpdaterIpc, autoUpdater } = require('./auto-updater');
-const { createIslandManager } = require('./island-manager');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const PORT = 38200;
@@ -24,19 +23,7 @@ const DEFAULT_DESKTOP_CONFIG = {
   quickCaptureAutoClose: true,
   autoBackupInterval: 'disabled', // 'disabled' | 'on_close' | 'daily'
   autoBackupFolder: '',
-  // Dynamic Island Desktop
-  dynamicIslandEnabled: false,
-  dynamicIslandStyle: 'pill', // 'pill' | 'notch'
-  dynamicIslandTrigger: 'hover', // 'hover' | 'click'
-  dynamicIslandAutoHideFullscreen: true,
-  dynamicIslandShortcutTarget: 'island', // 'island' | 'classic-window'
-  dynamicIslandDefaultTab: 'media', // 'media' | 'tasks' | 'capture' | 'focus' | 'habits' | 'shelf'
-  dynamicIslandClipboardHistory: true,
-  dynamicIslandSystemStats: true,
-  dynamicIslandAccentIntensity: 70, // 0..100 (%)
 };
-
-let islandManager = null;
 
 /**
  * Gestion de la persistance des préférences de l'application Desktop
@@ -663,14 +650,6 @@ function createMainWindow(appUrl) {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
-    if (islandManager) islandManager.updateVisibility();
-  });
-
-  // Visibilité intelligente de la Dynamic Island
-  ['focus', 'blur', 'show', 'hide', 'minimize', 'restore'].forEach((evt) => {
-    mainWindow.on(evt, () => {
-      if (islandManager) islandManager.updateVisibility();
-    });
   });
 }
 
@@ -728,19 +707,6 @@ function createQuickCaptureWindow(appUrl) {
 }
 
 function toggleQuickCaptureWindow() {
-  // Cohabitation avec la Dynamic Island : le raccourci global déploie l'Island sur l'onglet Quick-Capture
-  try {
-    const cfg = loadDesktopConfig();
-    if (
-      islandManager &&
-      cfg.dynamicIslandEnabled &&
-      cfg.dynamicIslandShortcutTarget !== 'classic-window' &&
-      islandManager.showCaptureTab()
-    ) {
-      return;
-    }
-  } catch (_) {}
-
   if (!quickCaptureWindow) return;
   if (quickCaptureWindow.isVisible()) {
     quickCaptureWindow.hide();
@@ -772,17 +738,6 @@ function updateTrayMenu() {
       label: `📝 Nouvelle Note rapide (${currentQuickCaptureShortcut})`,
       click: () => {
         toggleQuickCaptureWindow();
-      },
-    },
-    {
-      label: '🏝️ Activer / Masquer Dynamic Island',
-      type: 'checkbox',
-      checked: Boolean(loadDesktopConfig().dynamicIslandEnabled),
-      click: () => {
-        if (islandManager) {
-          islandManager.toggleEnabled();
-          updateTrayMenu();
-        }
       },
     },
     { type: 'separator' },
@@ -911,10 +866,6 @@ function registerIpcHandlers() {
     const updated = saveDesktopConfig(patch);
     if (patch.shortcut) {
       registerQuickCaptureShortcut(patch.shortcut);
-    }
-    if (patch && Object.keys(patch).some((k) => k.startsWith('dynamicIsland')) && islandManager) {
-      islandManager.applyConfig();
-      updateTrayMenu();
     }
     return updated;
   });
@@ -1083,8 +1034,6 @@ function registerIpcHandlers() {
       return { success: false, error: err?.message || String(err) };
     }
   });
-
-  // Pont SMTC / presse-papiers / stats : gérés par electron/island-manager.js
 }
 
 // Initialisation globale de l'application
@@ -1112,15 +1061,6 @@ app.whenReady().then(() => {
     createQuickCaptureWindow(appUrl);
     setupSystemTray(appUrl);
     setupAutoUpdater(mainWindow, getAppIcon);
-
-    // Dynamic Island Desktop (pilotable en direct via set-desktop-config)
-    islandManager = createIslandManager({
-      getMainWindow: () => mainWindow,
-      loadConfig: loadDesktopConfig,
-      saveConfig: saveDesktopConfig,
-      getAppUrl: () => currentAppUrl,
-    });
-    islandManager.init();
 
     // Vérification silencieuse de mise à jour au démarrage
     if (!isDev) {
@@ -1180,7 +1120,6 @@ app.whenReady().then(() => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
-  if (islandManager) islandManager.shutdown();
   if (localServer) {
     localServer.close();
   }

@@ -41,17 +41,6 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const pathname = usePathname();
   const router = useRouter();
 
-  // Navigation demandée depuis la Dynamic Island (ouvrir /tasks, /notes, /calendar...)
-  useEffect(() => {
-    const api = (window as unknown as {
-      electronAPI?: { onNavigateToRoute?: (cb: (route: string) => void) => () => void };
-    }).electronAPI;
-    if (!api?.onNavigateToRoute) return;
-    return api.onNavigateToRoute((route) => {
-      if (route && typeof route === 'string') router.push(route);
-    });
-  }, [router]);
-
   // Palette dynamique des 4 orbes d'aurore boréale selon la couleur d'accentuation (au sommet pour respecter les règles des hooks)
   const auroraColors = useMemo(() => {
     const isDark = theme === 'dark';
@@ -177,7 +166,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   }, [pathname, settings.startupView, router]);
 
   // Si on est sur la mini-fenêtre de capture rapide (Alt+Espace), afficher directement sans coquille
-  if (pathname === '/quick-capture' || pathname?.startsWith('/dynamic-island')) {
+  if (pathname === '/quick-capture') {
     return <>{children}</>;
   }
 

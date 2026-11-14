@@ -2,6 +2,21 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V2.7.4] - 2026-11-14 (Retrait Complet du Module Dynamic Island & Retour au Moteur Desktop Épuré)
+--------------------------------------------------------------------------------
+1. Suppression Intégrale des Fichiers & Composants Dynamic Island :
+- Suppression de la route dédiée `src/app/dynamic-island/page.tsx`, du répertoire `src/components/island/*` (`DynamicIsland.tsx`, `IslandMediaTab.tsx`, `IslandTasksCaptureTab.tsx`, `IslandHabitsReadingTab.tsx`, `IslandShelfClipboardTab.tsx`, `islandTheme.ts`), ainsi que de `src/lib/islandSync.ts` et `src/types/island.ts`.
+- Suppression des modules natifs `electron/island-manager.js` et `electron/island-native.js`.
+
+2. Épuration du Runtime Electron & des Paramètres Desktop (`electron/main.js`, `electron/preload.js`, `src/components/settings/DesktopSettingsSection.tsx`) :
+- Retrait de l'instanciation d'`islandManager`, des canaux IPC associés (`set-island-hitbox`, `set-island-ignore-mouse`, `get-now-playing`, etc.) et de l'option dans le menu contextuel du System Tray.
+- Le raccourci global (`Alt + Espace` par défaut) ouvre désormais directement et exclusivement la mini-fenêtre flottante `Quick Capture` (`/quick-capture`).
+- Retrait de la carte de configuration Dynamic Island dans `Paramètres -> Application Desktop`.
+
+3. Nettoyage de la Coquille Applicative, des Thèmes & des Widgets (`src/app/layout.tsx`, `src/components/AppShell.tsx`, `src/context/SettingsContext.tsx`, `src/app/globals.css`, `src/components/dashboard/widgets/FocusTimerWidget.tsx`, `src/components/WhatsNewModal.tsx`) :
+- Suppression des règles CSS spécifiques `html[data-island-window="true"]` dans `globals.css` et des garde-fous de route `/dynamic-island` dans `layout.tsx`, `AppShell.tsx` et `SettingsContext.tsx`.
+- Retour du widget `FocusTimerWidget.tsx` à une gestion d'état autonome directe sans diffusion inter-fenêtres vers l'Island.
+
 #### [V2.7.3] - 2026-11-06 (Fiabilisation des Clics Post-Changement de Thème & Curseur d'Accentuation 0–100 % de la Notch)
 --------------------------------------------------------------------------------
 1. Correction Définitive de la Perte des Clics sur la Notch après Changement de Thème (`electron/island-manager.js`, `src/context/SettingsContext.tsx`, `src/app/layout.tsx`, `src/app/globals.css`, `src/components/island/*`) :

@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-let appVersion = '2.7.3';
+let appVersion = '2.7.4';
 try {
   const pkg = require('../package.json');
   if (pkg && pkg.version) appVersion = pkg.version;
@@ -81,60 +81,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Requête HTTP directe native sans restriction CORS
   fetchUrl: (options) =>
     ipcRenderer.invoke('fetch-url', typeof options === 'string' ? { url: options } : options),
-
-  // Détection & Contrôle Multimédia Windows SMTC
-  getNowPlaying: () => ipcRenderer.invoke('get-now-playing'),
-  controlMedia: (action) => ipcRenderer.invoke('control-media', action),
-  selectMediaSession: (appId) => ipcRenderer.invoke('select-media-session', appId),
-
-  // Dynamic Island Desktop (Hitbox, Focus, Actions, Presse-papiers)
-  setIslandHitbox: (box) => ipcRenderer.send('set-island-hitbox', box),
-  setIslandIgnoreMouse: (ignore) => ipcRenderer.send('set-island-ignore-mouse', Boolean(ignore)),
-  setIslandFocusable: (focusable) => ipcRenderer.send('set-island-focusable', Boolean(focusable)),
-  islandCaptureClosed: () => ipcRenderer.send('island-capture-closed'),
-  openMainAppRoute: (route) => ipcRenderer.invoke('open-main-app-route', route),
-  openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
-  previewIsland: () => ipcRenderer.invoke('preview-island'),
-  getSystemStats: () => ipcRenderer.invoke('get-system-stats'),
-  getClipboardHistory: () => ipcRenderer.invoke('get-clipboard-history'),
-  copyClipboardItem: (idOrText) => ipcRenderer.invoke('copy-clipboard-item', idOrText),
-  pinClipboardItem: (id) => ipcRenderer.invoke('pin-clipboard-item', id),
-  deleteClipboardItem: (id) => ipcRenderer.invoke('delete-clipboard-item', id),
-  clearClipboardHistory: () => ipcRenderer.invoke('clear-clipboard-history'),
-
-  onIslandHover: (callback) => {
-    const sub = (_e, hovered) => callback(Boolean(hovered));
-    ipcRenderer.on('island-hover', sub);
-    return () => ipcRenderer.removeListener('island-hover', sub);
-  },
-  onIslandConfigUpdated: (callback) => {
-    const sub = (_e, cfg) => callback(cfg);
-    ipcRenderer.on('island-config-updated', sub);
-    return () => ipcRenderer.removeListener('island-config-updated', sub);
-  },
-  onActivateIslandCapture: (callback) => {
-    const sub = () => callback();
-    ipcRenderer.on('activate-island-capture', sub);
-    return () => ipcRenderer.removeListener('activate-island-capture', sub);
-  },
-  onIslandPreview: (callback) => {
-    const sub = () => callback();
-    ipcRenderer.on('island-preview', sub);
-    return () => ipcRenderer.removeListener('island-preview', sub);
-  },
-  onIslandVisibility: (callback) => {
-    const sub = (_e, visible) => callback(Boolean(visible));
-    ipcRenderer.on('island-visibility', sub);
-    return () => ipcRenderer.removeListener('island-visibility', sub);
-  },
-  onClipboardUpdated: (callback) => {
-    const sub = (_e, list) => callback(list);
-    ipcRenderer.on('island-clipboard-updated', sub);
-    return () => ipcRenderer.removeListener('island-clipboard-updated', sub);
-  },
-  onNavigateToRoute: (callback) => {
-    const subscription = (_event, route) => callback(route);
-    ipcRenderer.on('navigate-to-route', subscription);
-    return () => ipcRenderer.removeListener('navigate-to-route', subscription);
-  },
 });
