@@ -4,12 +4,12 @@
 
   <h1>Syntropy OS</h1>
   <p><strong>All-in-One Personal Productivity Operating System &amp; Second Brain</strong></p>
-  <p><em>Engineered with the PARA Method, Hybrid Markdown/Stylus Notes, and a Native Windows Desktop Runtime.</em></p>
+  <p><em>Engineered with the PARA Method, Hybrid Markdown/Stylus Notes, Universal Calendar Sync, and a Native Windows Desktop Runtime.</em></p>
 
   <p>
     <a href="https://second-brain-os-e6a83.web.app"><img src="https://img.shields.io/badge/Live_Web_App-Syntropy_OS-6366f1?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Live Demo" /></a>
     <a href="https://github.com/Neysann/second-brain-os/releases/latest"><img src="https://img.shields.io/badge/Desktop_App-Windows_x64-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows Desktop App" /></a>
-    <a href="https://github.com/Neysann/second-brain-os/releases/latest"><img src="https://img.shields.io/badge/Release-v2.7.5-10b981?style=for-the-badge" alt="Version" /></a>
+    <a href="https://github.com/Neysann/second-brain-os/releases/latest"><img src="https://img.shields.io/badge/Release-v2.7.6-10b981?style=for-the-badge" alt="Version" /></a>
   </p>
 
   <p>
@@ -24,8 +24,7 @@
 
   <p>
     <a href="#-overview">Overview</a> •
-    <a href="#-core-modules">Core Modules</a> •
-    <a href="#-visual-engines--themes">Visual Engines</a> •
+    <a href="#-core-features--modules">Core Features</a> •
     <a href="#%EF%B8%8F-windows-desktop-engine">Desktop Engine</a> •
     <a href="#%EF%B8%8F-architecture--tech-stack">Architecture</a> •
     <a href="#-getting-started">Getting Started</a>
@@ -46,47 +45,52 @@ Grounded in Tiago Forte's **Second Brain** methodology and the **PARA framework*
 
 ---
 
-## ⚡ Core Modules
+## ⚡ Core Features & Modules
 
-| Module | Key Capabilities |
-| :--- | :--- |
-| **🧠 Cognitive Dashboard** | Multi-size Bento grid (`1×1`, `2×1`, `2×2`, `4×1`), adaptive greetings, daily priority matrix, **Pomodoro & Deep Work Station**, hybrid ambient/YouTube audio player, real-time weather, and productivity analytics. |
-| **🎯 PARA Projects & Tasks** | Full **PARA** categorization (*Projects, Areas, Resources, Archives*), interactive **Kanban board** & tabular list views, hierarchical subtasks, priority levels (`Low` to `Urgent`), and progress tracking. |
-| **📝 Hybrid Knowledge Vault** | 2-pane **Obsidian / Notion** explorer with recursive folders, **Markdown + KaTeX** scientific typesetting, **Vector Stylus Ink** canvas (pressure-sensitive pen, fountain pen, highlighter, lasso & eraser with Firestore chunking), and instant clipboard/drag-and-drop image embedding (`![Alt](attachment:id)` backed by IndexedDB). |
-| **📅 Universal Calendar** | Month, week, and day time-blocking views with two-way **Google Calendar & Apple Calendar (iCal / WebCal)** synchronization powered by a native CORS-free Electron HTTP bridge and `.ics` import/export. |
-| **🔥 Habit Tracker** | Daily ritual tracking, active streak counters, completion rate analytics, and a GitHub-inspired annual consistency heatmap. |
-| **📚 Reading & Media Vault** | Track books, mangas, and articles with chapter/page quick-increment controls, status filters, ratings, and reading goals. |
-| **💰 Personal Finance** | Income and expense ledger, customizable category breakdowns, monthly budget caps, visual alert gauges, and recurring subscription tracking. |
+### 1. 🧠 Cognitive Dashboard & Deep Work Station
+- **Modular Bento Workspace**: Customizable multi-size widgets (`1×1`, `2×1`, `2×2`, `4×1`) with real-time metrics, daily priority focus, and weather integration.
+- **Pomodoro & Focus Timer**: Configurable focus/break intervals, quick session presets (*Sprint 15m*, *Classic 25m*, *Deep Work 45m*, *Master 60m*), daily cycle tracking, and Web Audio completion alerts.
+- **Hybrid Focus Audio Player**: Built-in ambient soundscapes and YouTube stream integration for deep work sessions.
+- **Universal Command Palette (`Ctrl + K`)**: Instant keyboard-driven navigation, global search across tasks/notes/projects, and quick actions.
 
----
+### 2. 🎯 PARA Projects & Task Engine
+- **Complete PARA Organization**: Structure every item into **Projects** (active goals with deadlines), **Areas** (long-term responsibilities), **Resources** (reference material), and **Archives** (completed/inactive work).
+- **Dual Execution Views**: Switch seamlessly between an interactive **3-column Kanban Board** (*To Do*, *In Progress*, *Done*) and a clean tabular **List View**.
+- **Granular Task Control**: Hierarchical subtasks, 4-tier priority matrix (`Low`, `Medium`, `High`, `Urgent`), due dates, custom tags, and automatic project completion percentages.
 
-## 🎨 Visual Engines & Themes
+### 3. 📝 Hybrid Knowledge Vault (Markdown + LaTeX + Stylus Ink)
+- **2-Pane Explorer**: Permanent hierarchical folder/subfolder tree, tag filters, and smart views (*All Notes*, *Pinned*, *Handwritten*, *Unfiled*).
+- **Scientific Markdown & KaTeX**: Live split/preview Markdown editor with a dedicated **LaTeX Math Toolbar (`∑ Math`)** for equations, matrices, integrals, and scientific notation, plus `.md` and `.tex` export.
+- **Vector Stylus Ink Canvas**: Native pressure-sensitive handwriting engine supporting Pen, Fountain Pen, Highlighter, Pixel/Stroke Eraser, and Lasso selection, backed by compact `g1:` gzip/base64 encoding and automatic Firestore subcollection chunking for large canvases.
+- **Multi-Source Image & File Embedding**: Paste screenshots directly from the clipboard (`Ctrl + V`) or drag-and-drop images/PDFs into any note with clean `![Title](attachment:id)` references and local `IndexedDB` caching.
 
-Syntropy OS features a real-time CSS token engine with three distinct visual identities and 8 accent palettes:
+### 4. 📅 Universal Calendar & Direct iCal Sync
+- **Multi-Scale Time Blocking**: Month, week, and day views with event creation, category color-coding, and task deadline overlays.
+- **Google & Apple Calendar Synchronization**: Real-time iCal / WebCal feed subscriptions powered by a native CORS-free Electron HTTP bridge, plus `.ics` file drag-and-drop import/export.
 
-### 1. Liquid Glass (iOS Glassmorphism)
-- Adjustable surface translucency (`0%` to `45%`) and dynamic `backdrop-filter` blur (`0px` to `20px`) with specular borders and ambient aurora mesh gradients.
-- Instant 60 FPS local preview with debounced Firestore cloud persistence.
-- Supports both **Zinc Dark**, **Pure OLED Black (`#000000`)**, and **Daylight** modes.
+### 5. 🔥 Habit Tracker & Streak Analytics
+- **Daily Rituals & Streaks**: One-click daily check-ins, active streak counters, and adherence percentages.
+- **Annual Consistency Heatmap**: GitHub-inspired 365-day visual contribution grid to monitor long-term consistency.
 
-### 2. Nothing OS Edition *(Secret Theme)*
-- Inspired by Nothing Technology hardware & Glyph Interface.
-- Official **NDot 57** dot-matrix typography, exposed circuit schematics, animated **Glyph LED** rings, pure OLED black surfaces, and signature Nothing crimson (`#D71920`) accents.
+### 6. 📚 Reading & Media Tracker
+- **Library Management**: Track books, mangas, and technical readings by status (*Reading*, *To Read*, *Completed*, *Paused*).
+- **Quick Progress Controls**: Instant `+1 chap`, `+5 p.`, and `+10 p.` increment buttons, progress bars, personal ratings, and reading notes.
 
-### 3. Cyberpunk HUD 2077 *(Secret Theme)*
-- High-contrast cyberdeck interface featuring an interactive **Matrix Rain** background canvas, angled HUD corner brackets, scanline overlays, and neon `#FCEE0A` yellow / `#00F0FF` cyan telemetry styling.
+### 7. 💰 Personal Finance & Budget Manager
+- **Income & Expense Ledger**: Categorized transaction logging with monthly cashflow summaries.
+- **Budget Caps & Alerts**: Set monthly spending thresholds per category with real-time visual consumption gauges and recurring subscription tracking.
 
 ---
 
 ## 🖥️ Windows Desktop Engine
 
-Packaged as a standalone 64-bit Windows application (`Syntropy-OS-Setup-x.x.x.exe`) via **Electron 44** and **NSIS**, the desktop runtime unlocks native OS integrations:
+Packaged as a standalone 64-bit Windows application (`Syntropy-OS-Setup-x.x.x.exe`) via **Electron 44** and **NSIS**, the desktop runtime unlocks native OS capabilities:
 
-- ⚡ **Global Quick Capture (`Alt + Space`)**: Summon a frameless, always-on-top floating capture window from anywhere in Windows (even over full-screen apps) to jot down a task or Markdown note with built-in voice dictation.
-- 📌 **System Tray Integration**: Runs silently in the background when closed (`Close to Tray`), with quick context-menu actions for Pomodoro control, Top 3 daily tasks, and instant note capture.
+- ⚡ **Global Quick Capture (`Alt + Space`)**: Summon a frameless, always-on-top floating capture window from anywhere in Windows to record a task or Markdown note (with Web Speech API voice dictation) without leaving your active application.
+- 📌 **System Tray Integration**: Continues running silently in the background when closed (`Close to Tray`), providing right-click shortcuts for Pomodoro control, Top 3 daily tasks, and instant note capture.
 - 🔔 **Interactive Windows Toast Notifications**: Native OS reminders with actionable buttons (*"Complete"* / *"Snooze 15m"*).
-- 💾 **Local Filesystem Backup & Markdown Export**: One-click full JSON database backups and bulk `.md` file exports directly to a local directory on disk.
-- 🔄 **Seamless Auto-Updates**: Built-in `electron-updater` integration connected to GitHub Releases with direct browser fallback download.
+- 💾 **Local Filesystem Backup & Markdown Export**: One-click full JSON database backups (manual or scheduled on close/daily) and bulk `.md` note exports directly to a local directory on disk.
+- 🔄 **Automated Updates**: Integrated `electron-updater` connected to GitHub Releases with direct browser download fallback.
 
 ---
 
@@ -97,7 +101,7 @@ Packaged as a standalone 64-bit Windows application (`Syntropy-OS-Setup-x.x.x.ex
 | Layer | Technologies |
 | :--- | :--- |
 | **Frontend Framework** | [Next.js 16.3](https://nextjs.org/) (App Router, Static Export, Turbopack), [React 19](https://react.dev/), [TypeScript 5](https://www.typescriptlang.org/) |
-| **Styling & UI** | [Tailwind CSS 4](https://tailwindcss.com/), CSS Custom Properties, [Lucide Icons](https://lucide.dev/) |
+| **Styling & UI** | [Tailwind CSS 4](https://tailwindcss.com/), [Lucide Icons](https://lucide.dev/) |
 | **Desktop Runtime** | [Electron 44](https://www.electronjs.org/), `electron-builder` (NSIS x64), `electron-updater`, Node.js HTTP static server |
 | **Backend & Sync** | [Firebase 12](https://firebase.google.com/) (Authentication, Cloud Firestore real-time sync, Firebase Hosting), IndexedDB & LocalStorage offline fallback |
 | **Rich Editing** | `@uiw/react-md-editor`, [KaTeX](https://katex.org/) (LaTeX math rendering), Custom HTML5 Vector Stylus Canvas (`g1:` gzip/base64 compression), `JSZip` |
@@ -120,12 +124,12 @@ syntropy-os/
 │   │   ├── reading/             # Book & Manga Reading Tracker
 │   │   ├── budget/              # Personal Finance & Expense Manager
 │   │   ├── quick-capture/       # Frameless floating Quick Capture route (Alt+Space)
-│   │   └── settings/            # System Preferences, Theme Studio & Admin Console
+│   │   └── settings/            # System Preferences, Desktop Controls & Admin Console
 │   ├── components/              # Reusable UI components, modals & dashboard widgets
-│   ├── context/                 # React contexts (Auth, Data, Settings, Theme, DailyLife, Reading)
+│   ├── context/                 # React contexts (Auth, Data, Settings, DailyLife, Reading)
 │   ├── lib/                     # Firebase config, Firestore services, LaTeX & Ink encoders
 │   └── types/                   # TypeScript interfaces & data models
-├── public/                      # Static assets, icons & custom fonts (NDot57, NType82)
+├── public/                      # Static assets & application icons
 ├── scripts/                     # Build, icon conversion & automated release scripts
 ├── electron-builder.json        # Windows NSIS installer & GitHub publish configuration
 └── firebase.json                # Firebase Hosting & Cloud Firestore security rules config

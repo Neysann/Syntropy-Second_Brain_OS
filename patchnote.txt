@@ -2,6 +2,12 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V2.7.6] - 2026-11-17 (Épuration du README GitHub — Focus 100 % sur les Fonctionnalités & l'Architecture)
+--------------------------------------------------------------------------------
+1. Mise à jour de `README.md` :
+- Retrait complet de toute mention aux thèmes visuels et esthétiques pour se concentrer exclusivement sur les fonctionnalités métier et l'architecture technique.
+- Détail approfondi des 7 modules fonctionnels (Cognitive Dashboard & Deep Work Station, PARA Projects & Task Engine, Hybrid Knowledge Vault Markdown/LaTeX/Stylus Ink/IndexedDB, Universal Calendar & Direct iCal Sync, Habit Tracker, Reading Tracker, Personal Finance) et du moteur Desktop Windows (Quick Capture `Alt+Space`, System Tray, Notifications Windows Toast, Sauvegardes locales JSON/Markdown et Auto-Updater).
+
 #### [V2.7.5] - 2026-11-17 (Refonte Complète du README GitHub en Anglais — Standard Open-Source)
 --------------------------------------------------------------------------------
 1. Réécriture Intégrale de `README.md` en Anglais :
