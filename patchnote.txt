@@ -2,6 +2,13 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V2.7.5] - 2026-11-17 (Refonte Complète du README GitHub en Anglais — Standard Open-Source)
+--------------------------------------------------------------------------------
+1. Réécriture Intégrale de `README.md` en Anglais :
+- En-tête GitHub soigné avec logo centré, accroche claire, badges de technologies (`Next.js 16.3`, `React 19.2`, `TypeScript 5`, `Electron 44`, `Tailwind CSS 4`, `Firebase 12`, `MIT License`) et liens rapides vers la Web App et les Releases Windows x64.
+- Tableau synthétique des 7 modules clés de Syntropy OS (Cognitive Dashboard, PARA Projects & Tasks, Hybrid Knowledge Vault Markdown/KaTeX/Stylus Ink/IndexedDB Images, Universal Calendar, Habit Tracker, Reading Vault, Personal Finance).
+- Documentation des 3 moteurs visuels (Liquid Glass iOS, Nothing OS Edition, Cyberpunk HUD 2077), de l'architecture Desktop Electron Windows et du guide d'installation/compilation.
+
 #### [V2.7.4] - 2026-11-14 (Retrait Complet du Module Dynamic Island & Retour au Moteur Desktop Épuré)
 --------------------------------------------------------------------------------
 1. Suppression Intégrale des Fichiers & Composants Dynamic Island :
