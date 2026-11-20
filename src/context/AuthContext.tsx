@@ -11,10 +11,10 @@ import {
   updateProfile,
   sendPasswordResetEmail,
 } from 'firebase/auth';
-import { auth, db, googleProvider, isFirebaseConfigured } from '@/lib/firebase';
+import { auth, db, googleProvider, isFirebaseConfigured } from '@/lib/core/firebase';
 import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
 import { UserProfile } from '@/types';
-import { isSiteAdmin, getUserRole, saveLocalConnectedUser, ROOT_ADMIN_EMAIL } from '@/lib/admin';
+import { isSiteAdmin, getUserRole, saveLocalConnectedUser, ROOT_ADMIN_EMAIL } from '@/lib/core/admin';
 
 interface AuthContextType {
   user: UserProfile | null;

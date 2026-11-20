@@ -28,8 +28,8 @@ import {
 import { useData } from '@/context/DataContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Task, TaskPriority, TaskStatus, ParaCategory, Project } from '@/types';
-import TaskModal from '@/components/TaskModal';
-import ProjectModal from '@/components/ProjectModal';
+import TaskModal from '@/components/tasks/TaskModal';
+import ProjectModal from '@/components/tasks/ProjectModal';
 
 export default function TasksPage() {
   const { tasks, projects, toggleTaskStatus, updateTask } = useData();

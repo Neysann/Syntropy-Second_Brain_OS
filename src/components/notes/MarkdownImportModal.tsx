@@ -13,7 +13,7 @@ import {
   Sparkles,
   Info,
 } from 'lucide-react';
-import { ParsedMarkdownNote } from '@/lib/markdownImporter';
+import { ParsedMarkdownNote } from '@/lib/notes/markdownImporter';
 
 interface MarkdownImportModalProps {
   isOpen: boolean;

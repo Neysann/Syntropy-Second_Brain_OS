@@ -35,7 +35,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useDailyLife } from '@/context/DailyLifeContext';
 import { useReading } from '@/context/ReadingContext';
-import { CURRENT_VERSION } from '@/components/WhatsNewModal';
+import { CURRENT_VERSION } from '@/components/modals/WhatsNewModal';
 
 interface SidebarProps {
   onOpenSearch: () => void;

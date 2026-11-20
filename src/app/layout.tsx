@@ -7,7 +7,7 @@ import { DataProvider } from '@/context/DataContext';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { DailyLifeProvider } from '@/context/DailyLifeContext';
 import { ReadingProvider } from '@/context/ReadingContext';
-import AppShell from '@/components/AppShell';
+import AppShell from '@/components/layout/AppShell';
 
 export const metadata: Metadata = {
   title: 'Syntropy — Système de Productivité & Connaissances',

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, X, Globe, Sparkles, Loader2, Check } from 'lucide-react';
-import { CityResult, searchCities, POPULAR_CITIES } from '@/lib/geocoding';
+import { CityResult, searchCities, POPULAR_CITIES } from '@/lib/integrations/geocoding';
 
 interface CitySearchModalProps {
   isOpen: boolean;

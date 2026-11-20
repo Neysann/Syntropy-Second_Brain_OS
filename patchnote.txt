@@ -2,6 +2,27 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V2.7.10] - 2026-11-20 (Réorganisation Modulaire de l'Arborescence `src/components/`, `src/lib/` & `docs/`)
+--------------------------------------------------------------------------------
+1. Structuration par Domaine de `src/components/` (23 composants déplacés) :
+- `layout/` : `AppShell.tsx`, `Sidebar.tsx`, `CommandPaletteModal.tsx`, `MatrixRainCanvas.tsx`.
+- `modals/` : `AuthModal.tsx`, `WhatsNewModal.tsx`, `SecretThemeModal.tsx`.
+- `admin/` : `AdminControlPanel.tsx`.
+- `calendar/` : `CalendarSyncModal.tsx`, `CalendarWidget.tsx`, `EventModal.tsx`.
+- `tasks/` : `TaskModal.tsx`, `ProjectModal.tsx`.
+- `notes/` : `MarkdownImportModal.tsx`, `NoteTemplateModal.tsx`, sous-dossier `ink/` (`InkNoteEditor.tsx`, `InlineInkBlock.tsx`, `StylusCanvas.tsx`) et sous-dossier `latex/` (`LatexHelperModal.tsx`, `LatexLivePreview.tsx`, `LatexRenderer.tsx`, `LatexToolbar.tsx`, `LatexTutorialModal.tsx`).
+
+2. Structuration par Thématique de `src/lib/` (19 modules déplacés) :
+- `core/` : `firebase.ts`, `dataService.ts`, `admin.ts`, `version.ts`, `mockData.ts`.
+- `ink/` : `ink.ts`, `inkCodec.ts`, `inkEngine.ts`.
+- `latex/` : `latexExport.ts`, `latexPalette.ts`, `latexSnippets.ts`.
+- `notes/` : `attachmentStorage.ts`, `documentImporter.ts`, `markdownImporter.ts`, `noteTemplates.ts`.
+- `integrations/` : `evrisClient.ts`, `bookSearch.ts`, `geocoding.ts`, `icalParser.ts`.
+
+3. Propreté de la Racine & Imports :
+- Déplacement de `PLAN_IA.md` vers `docs/PLAN_IA.md` et suppression du fichier de test temporaire `test-evris-ui.html`.
+- Mise à jour automatique de tous les imports dans 33 fichiers et validation TypeScript (`tsc --noEmit`) sans erreur.
+
 #### [V2.7.9] - 2026-11-20 (Nettoyage & Optimisation Complète du Dépôt et des Dépendances)
 --------------------------------------------------------------------------------
 1. Suppression de 5 Composants Morts (`src/components/`) :

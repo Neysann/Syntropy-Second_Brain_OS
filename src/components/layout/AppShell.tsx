@@ -21,15 +21,15 @@ import {
 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import CommandPaletteModal from './CommandPaletteModal';
-import AuthModal from './AuthModal';
-import WhatsNewModal from './WhatsNewModal';
+import AuthModal from '../modals/AuthModal';
+import WhatsNewModal from '../modals/WhatsNewModal';
 import MatrixRainCanvas from './MatrixRainCanvas';
 import { useTheme } from '@/context/ThemeContext';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
-import { isSiteAdmin } from '@/lib/admin';
-import { APP_VERSION } from '@/lib/version';
+import { isSiteAdmin } from '@/lib/core/admin';
+import { APP_VERSION } from '@/lib/core/version';
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);

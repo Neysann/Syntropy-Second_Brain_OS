@@ -22,9 +22,9 @@ import {
   deleteAllEvents,
   getLocalICalFeeds,
   saveLocalICalFeeds,
-} from '@/lib/dataService';
-import { fetchICalFromUrl, parseICal } from '@/lib/icalParser';
-import { isFirebaseConfigured } from '@/lib/firebase';
+} from '@/lib/core/dataService';
+import { fetchICalFromUrl, parseICal } from '@/lib/integrations/icalParser';
+import { isFirebaseConfigured } from '@/lib/core/firebase';
 import { useAuth } from './AuthContext';
 
 interface DataContextType {

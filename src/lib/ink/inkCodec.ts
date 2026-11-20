@@ -3,7 +3,7 @@
 // Format : "g1:<base64 gzip(json)>"  ou  "j1:<json>" (repli sans CompressionStream)
 // ===================================================================
 import type { InkBackground, InkDocument, InkPaperColor, InkPenTool, InkStroke } from '@/types';
-import { uid } from '@/lib/ink';
+import { uid } from '@/lib/ink/ink';
 
 type PackedStroke = [string, string, number, number[]]; // [outil, couleur, largeur×10, deltas xyp]
 interface Packed {

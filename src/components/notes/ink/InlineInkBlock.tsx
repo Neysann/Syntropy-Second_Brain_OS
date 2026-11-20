@@ -4,8 +4,8 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { PenTool, Trash2, ChevronsUpDown, Minus, Plus, Loader2, Check } from 'lucide-react';
 import type { InkBlockData, InkDocument, InkPaperColor } from '@/types';
 import { StylusCanvas } from './StylusCanvas';
-import { decodeInk, encodeInk, emptyInkDocument } from '@/lib/inkCodec';
-import { inkToSvg } from '@/lib/ink';
+import { decodeInk, encodeInk, emptyInkDocument } from '@/lib/ink/inkCodec';
+import { inkToSvg } from '@/lib/ink/ink';
 import { useSettings } from '@/context/SettingsContext';
 
 export const INK_BLOCK_DEFAULT_HEIGHT = 360;

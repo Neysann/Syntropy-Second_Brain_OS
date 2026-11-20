@@ -52,12 +52,12 @@ import {
   ADMIN_PRIVILEGES,
   ConnectedUserAccount,
   getLocalConnectedUsers,
-} from '@/lib/admin';
-import { db } from '@/lib/firebase';
+} from '@/lib/core/admin';
+import { db } from '@/lib/core/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
-import { APP_VERSION } from '@/lib/version';
+import { APP_VERSION } from '@/lib/core/version';
 
 interface AdminControlPanelProps {
   isDark: boolean;

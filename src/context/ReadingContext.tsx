@@ -11,7 +11,7 @@ import {
   saveReadingProfile,
   getLocalBooks,
   getLocalReadingProfile,
-} from '@/lib/dataService';
+} from '@/lib/core/dataService';
 
 export const toDateKey = (d: Date): string => {
   const y = d.getFullYear();

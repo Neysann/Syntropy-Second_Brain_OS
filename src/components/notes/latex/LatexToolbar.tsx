@@ -9,7 +9,7 @@ import {
   templateToPreview,
   LatexPaletteCategory,
   LatexPaletteItem,
-} from '@/lib/latexPalette';
+} from '@/lib/latex/latexPalette';
 import {
   Sigma,
   Search,

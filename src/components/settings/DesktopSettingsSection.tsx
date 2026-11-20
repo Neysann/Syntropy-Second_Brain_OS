@@ -27,7 +27,7 @@ import {
   Layers,
 } from 'lucide-react';
 import AdminUpdateSection from './AdminUpdateSection';
-import { APP_VERSION } from '@/lib/version';
+import { APP_VERSION } from '@/lib/core/version';
 
 export const RECOMMENDED_SHORTCUTS = [
   { id: 'Alt+Space', label: 'Alt + Espace (Défaut standard Windows)' },

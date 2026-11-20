@@ -64,7 +64,7 @@ import {
   resolveEvrisApproval,
   saveEvrisUrl,
   sendEvrisBackendMessage,
-} from '@/lib/evrisClient';
+} from '@/lib/integrations/evrisClient';
 
 type EvrisTab = 'chat' | 'telemetry' | 'memories' | 'logs' | 'settings';
 

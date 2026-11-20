@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 import { NoteAttachment } from '@/types';
-import { saveAttachmentLocally } from '@/lib/attachmentStorage';
-import { parseMarkdownContent } from '@/lib/markdownImporter';
+import { saveAttachmentLocally } from '@/lib/notes/attachmentStorage';
+import { parseMarkdownContent } from '@/lib/notes/markdownImporter';
 
 export const MAX_ATTACHMENT_SYNC_SIZE = 25 * 1024 * 1024; // 25 Mo max pour la synchronisation fluide multi-appareils
 

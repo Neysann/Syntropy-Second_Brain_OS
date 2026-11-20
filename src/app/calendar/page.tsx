@@ -29,9 +29,9 @@ import { useData } from '@/context/DataContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
 import { Project, Task, ParaCategory, CalendarEvent } from '@/types';
-import ProjectModal from '@/components/ProjectModal';
-import { EventModal } from '@/components/EventModal';
-import { CalendarSyncModal } from '@/components/CalendarSyncModal';
+import ProjectModal from '@/components/tasks/ProjectModal';
+import { EventModal } from '@/components/calendar/EventModal';
+import { CalendarSyncModal } from '@/components/calendar/CalendarSyncModal';
 
 export default function CalendarPage() {
   const { projects, tasks, events, icalFeeds, deleteAllEvents } = useData();

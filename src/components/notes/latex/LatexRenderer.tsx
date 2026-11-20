@@ -5,7 +5,7 @@ import katex from 'katex';
 import { useTheme } from '@/context/ThemeContext';
 import { Link2, Check, ZoomIn, Loader2, Image as ImageIcon } from 'lucide-react';
 import { NoteAttachment } from '@/types';
-import { getAttachmentLocally } from '@/lib/attachmentStorage';
+import { getAttachmentLocally } from '@/lib/notes/attachmentStorage';
 
 interface LatexRendererProps {
   content: string;

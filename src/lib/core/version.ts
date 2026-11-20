@@ -1,8 +1,8 @@
-import pkg from '../../package.json';
+import pkg from '../../../package.json';
 
 /**
  * Version actuelle du logiciel Syntropy OS, extraite automatiquement depuis package.json.
  * Sert de source unique de vérité pour l'UI, les notifications et le suivi des mises à jour.
  */
-export const APP_VERSION: string = pkg.version || '2.7.9';
+export const APP_VERSION: string = pkg.version || '2.7.10';
 export const CURRENT_VERSION: string = APP_VERSION;

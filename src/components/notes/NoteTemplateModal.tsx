@@ -19,8 +19,8 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
-import { NOTE_TEMPLATES, NoteTemplate } from '@/lib/noteTemplates';
-import LatexRenderer from './LatexRenderer';
+import { NOTE_TEMPLATES, NoteTemplate } from '@/lib/notes/noteTemplates';
+import LatexRenderer from './latex/LatexRenderer';
 
 interface NoteTemplateModalProps {
   isOpen: boolean;

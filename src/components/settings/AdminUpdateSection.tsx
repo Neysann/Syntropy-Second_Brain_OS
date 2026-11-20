@@ -14,7 +14,7 @@ import {
   ArrowRight,
   ShieldCheck,
 } from 'lucide-react';
-import { APP_VERSION } from '@/lib/version';
+import { APP_VERSION } from '@/lib/core/version';
 
 export interface UpdateInfoState {
   status:

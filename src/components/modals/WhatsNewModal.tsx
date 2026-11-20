@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import { CURRENT_VERSION } from '@/lib/version';
+import { CURRENT_VERSION } from '@/lib/core/version';
 
 export { CURRENT_VERSION };
 

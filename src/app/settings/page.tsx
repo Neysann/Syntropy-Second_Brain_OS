@@ -43,11 +43,11 @@ import {
 import { useSettings } from '@/context/SettingsContext';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
-import { isSiteAdmin } from '@/lib/admin';
-import AdminControlPanel from '@/components/AdminControlPanel';
+import { isSiteAdmin } from '@/lib/core/admin';
+import AdminControlPanel from '@/components/admin/AdminControlPanel';
 import DesktopSettingsSection from '@/components/settings/DesktopSettingsSection';
-import { CURRENT_VERSION } from '@/components/WhatsNewModal';
-import { SecretThemeModal, playSecretUnlockSound } from '@/components/SecretThemeModal';
+import { CURRENT_VERSION } from '@/components/modals/WhatsNewModal';
+import { SecretThemeModal, playSecretUnlockSound } from '@/components/modals/SecretThemeModal';
 import {
   ThemeSetting,
   AccentColor,

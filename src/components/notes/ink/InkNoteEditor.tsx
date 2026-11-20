@@ -3,8 +3,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type { Note, InkDocument, InkPaperColor } from '@/types';
 import { StylusCanvas } from './StylusCanvas';
-import { decodeInk, encodeInk, emptyInkDocument } from '@/lib/inkCodec';
-import { loadInkChunks } from '@/lib/dataService';
+import { decodeInk, encodeInk, emptyInkDocument } from '@/lib/ink/inkCodec';
+import { loadInkChunks } from '@/lib/core/dataService';
 import { useSettings } from '@/context/SettingsContext';
 import { Loader2, Check, CloudUpload, Clock } from 'lucide-react';
 

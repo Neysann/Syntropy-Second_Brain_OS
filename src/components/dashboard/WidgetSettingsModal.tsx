@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { DashboardWidgetConfig } from '@/types/dashboard';
 import { CitySearchModal } from './CitySearchModal';
-import { CityResult } from '@/lib/geocoding';
+import { CityResult } from '@/lib/integrations/geocoding';
 
 interface WidgetSettingsModalProps {
   isOpen: boolean;

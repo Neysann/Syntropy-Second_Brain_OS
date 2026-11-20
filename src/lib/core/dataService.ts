@@ -19,7 +19,7 @@ import {
   saveAttachmentLocally,
   getAttachmentLocally,
   deleteAttachmentLocally,
-} from './attachmentStorage';
+} from '../notes/attachmentStorage';
 
 const LOCAL_STORAGE_KEYS = {
   TASKS: 'second_brain_tasks_v1',

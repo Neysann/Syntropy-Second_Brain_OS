@@ -28,7 +28,7 @@ import {
   strokeBounds,
   strokeHitsCircle,
   uid,
-} from '@/lib/ink';
+} from '@/lib/ink/ink';
 
 export interface InkSettings {
   tool: InkTool;

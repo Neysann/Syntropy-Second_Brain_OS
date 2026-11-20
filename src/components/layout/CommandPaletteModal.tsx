@@ -37,7 +37,7 @@ import { useData } from '@/context/DataContext';
 import { useDailyLife } from '@/context/DailyLifeContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
-import { CURRENT_VERSION } from '@/lib/version';
+import { CURRENT_VERSION } from '@/lib/core/version';
 
 interface CommandPaletteModalProps {
   isOpen: boolean;

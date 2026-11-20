@@ -18,7 +18,7 @@ import {
 } from '@/types';
 import { useAuth } from './AuthContext';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '@/lib/firebase';
+import { db, isFirebaseConfigured } from '@/lib/core/firebase';
 
 export const DEFAULT_SETTINGS: AppSettings = {
   uiStyle: 'syntropy',

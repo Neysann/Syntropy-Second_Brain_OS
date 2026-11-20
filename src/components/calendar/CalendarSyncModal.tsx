@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { useTheme } from '@/context/ThemeContext';
-import { parseICal, exportToICal } from '@/lib/icalParser';
+import { parseICal, exportToICal } from '@/lib/integrations/icalParser';
 
 interface CalendarSyncModalProps {
   isOpen: boolean;

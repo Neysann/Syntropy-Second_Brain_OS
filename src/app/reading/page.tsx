@@ -22,7 +22,7 @@ import {
 import { useReading, toDateKey } from '@/context/ReadingContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Book, BookKind, BookSearchResult, BookStatus, ProgressUnit } from '@/types/reading';
-import { searchBooks } from '@/lib/bookSearch';
+import { searchBooks } from '@/lib/integrations/bookSearch';
 
 const STATUS_META: Record<BookStatus, { label: string; chip: string }> = {
   to_read: { label: 'À lire', chip: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30' },

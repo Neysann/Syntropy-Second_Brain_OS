@@ -36,8 +36,8 @@ import {
   InkEngine,
   InkSettings,
   InkUiState,
-} from '@/lib/inkEngine';
-import { PAPER_COLORS, getDefaultPenColor } from '@/lib/ink';
+} from '@/lib/ink/inkEngine';
+import { PAPER_COLORS, getDefaultPenColor } from '@/lib/ink/ink';
 
 export interface StylusCanvasProps {
   initialDocument: InkDocument;
