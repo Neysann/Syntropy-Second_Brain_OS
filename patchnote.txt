@@ -2,6 +2,21 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V2.7.9] - 2026-11-20 (Nettoyage & Optimisation Complète du Dépôt et des Dépendances)
+--------------------------------------------------------------------------------
+1. Suppression de 5 Composants Morts (`src/components/`) :
+- Retrait des composants obsolètes et jamais importés : `GlobalSearchModal.tsx`, `habits/HelloHabitStreaksView.tsx`, `InkLatexModal.tsx`, `MarkdownEditorWrapper.tsx` et `NothingLedBar.tsx`.
+
+2. Suppression des Dépendances NPM Inutilisées (`package.json`) :
+- Désinstallation de `@uiw/react-md-editor`, `clsx` et `tailwind-merge` (non référencés dans l'application active).
+
+3. Nettoyage des Scripts, Assets et Fichiers Obsolètes :
+- Suppression de 5 anciens scripts one-off dans `scripts/` (`check-domains.js`, `sync-firebase-auth.js`, `generate_icons.py`, `upload-release.js`, `upload-to-storage.js`), de l'asset non utilisé `public/logo.jpg`, ainsi que des anciens fichiers racine `Lancer_Syntropy.bat` et `PLAN.md`.
+
+4. Optimisation Disque & Purge Git (~4,32 Go libérés) :
+- Suppression des artefacts générés `dist/` (12 anciens installateurs `.exe` et `win-unpacked/`), `.next/` et `tsconfig.tsbuildinfo`.
+- Suppression de l'ancienne branche locale `master` dans `second-brain-os/` et exécution de `git gc --prune=now` pour purger ~1,14 Go de binaires historiques v2.5.0.
+
 #### [V2.7.8] - 2026-11-20 (Correctifs Visuels de l'Interface E.V.R.I.S. — Monochrome, Hauteur Desktop & Centrage)
 --------------------------------------------------------------------------------
 1. Correction du Contraste en Mode Accentuation « Monochrome » (`src/components/Sidebar.tsx`, `src/components/evris/EvrisHub.tsx`) :
