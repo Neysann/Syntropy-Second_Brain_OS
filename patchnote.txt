@@ -2,6 +2,15 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V2.7.8] - 2026-11-20 (Correctifs Visuels de l'Interface E.V.R.I.S. — Monochrome, Hauteur Desktop & Centrage)
+--------------------------------------------------------------------------------
+1. Correction du Contraste en Mode Accentuation « Monochrome » (`src/components/Sidebar.tsx`, `src/components/evris/EvrisHub.tsx`) :
+- Remplacement du dégradé `from-purple-600 to-indigo-600` (qui rendait le bouton actif `E.V.R.I.S.` et les bulles utilisateur blanc-sur-blanc en thème Monochrome) par la classe unifiée `bg-purple-600`, permettant aux règles `[data-accent="monochrome"]` d'appliquer automatiquement le texte et les icônes noirs haute lisibilité (`#09090b`) ainsi qu'un badge `IA` contrasté.
+
+2. Correction du Débordement Bas sur Desktop Electron & Centrage de l'Écran d'Accueil (`src/components/evris/EvrisHub.tsx`) :
+- Remplacement de `h-[calc(100vh-3.5rem)] md:h-screen` par `flex-1 h-full min-h-0` afin que le compositeur de message (`Envoyer`) ne soit plus rogné en bas par la barre de titre Electron.
+- Raccourcissement du placeholder du champ de saisie sur une seule ligne propre et centrage vertical de la carte d'accueil E.V.R.I.S. lorsque la conversation est vide.
+
 #### [V2.7.7] - 2026-11-20 (Interface Complète E.V.R.I.S. & Pont de Données Syntropy OS)
 --------------------------------------------------------------------------------
 1. Activation du Bouton Assistant IA dans la Barre Latérale (`src/components/Sidebar.tsx`, `src/app/evris/page.tsx`) :

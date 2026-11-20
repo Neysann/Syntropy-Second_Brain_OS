@@ -590,7 +590,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSearch, onOpenAuth }) =>
                   ? 'bg-[#FCEE0A]/15 border-[#FCEE0A] text-[#FCEE0A]'
                   : settings.uiStyle === 'nothing'
                   ? 'bg-white border-white text-black'
-                  : 'bg-gradient-to-r from-purple-600 to-indigo-600 border-purple-400/50 text-white shadow-md shadow-purple-600/30'
+                  : 'bg-purple-600 border-purple-500/50 text-white shadow-md shadow-purple-600/30'
                 : settings.uiStyle === 'nothing'
                 ? 'bg-zinc-900 border-zinc-800 text-white hover:border-zinc-700 hover:bg-zinc-800'
                 : theme === 'dark'
@@ -610,7 +610,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSearch, onOpenAuth }) =>
                   ? 'bg-[#FCEE0A]/15 border-[#FCEE0A] text-[#FCEE0A] font-mono'
                   : settings.uiStyle === 'nothing'
                   ? 'bg-white border-white text-black font-bold'
-                  : 'bg-gradient-to-r from-purple-600 to-indigo-600 border-purple-400/50 text-white shadow-md shadow-purple-600/30'
+                  : 'bg-purple-600 border-purple-500/50 text-white shadow-md shadow-purple-600/30'
                 : settings.uiStyle === 'nothing'
                 ? 'bg-zinc-900 border-zinc-800 text-white hover:border-zinc-700 hover:bg-zinc-800'
                 : theme === 'dark'
@@ -630,6 +630,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSearch, onOpenAuth }) =>
                 isLinkActive('/evris')
                   ? settings.uiStyle === 'nothing'
                     ? 'bg-black text-white border-black/30'
+                    : settings.accentColor === 'monochrome'
+                    ? 'bg-zinc-900/15 text-zinc-950 border-zinc-900/25 font-bold'
                     : 'bg-white/15 text-white border-white/25'
                   : 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400'
               }`}

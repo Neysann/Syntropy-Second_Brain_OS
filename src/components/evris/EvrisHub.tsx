@@ -971,7 +971,7 @@ export const EvrisHub: React.FC = () => {
     : 'bg-white border-zinc-200 shadow-xs';
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] md:h-screen w-full overflow-hidden">
+    <div className="flex flex-col flex-1 h-full min-h-0 w-full overflow-hidden">
       {/* Top 3px SystemPulse Bar (inspiré hud-mockup.html, adapté aux thèmes Syntropy) */}
       <div
         className="h-[3px] w-full flex-shrink-0"
@@ -1181,8 +1181,12 @@ export const EvrisHub: React.FC = () => {
       {/* ===================================================================== */}
       {activeTab === 'chat' && (
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
-            <div className="max-w-4xl mx-auto space-y-4">
+          <div
+            className={`flex-1 overflow-y-auto px-4 sm:px-6 py-5 ${
+              messages.length === 0 ? 'flex flex-col justify-center' : 'space-y-4'
+            }`}
+          >
+            <div className="max-w-4xl w-full mx-auto space-y-4">
               {messages.length === 0 ? (
                 <div className={`p-6 sm:p-8 rounded-3xl border text-center space-y-5 ${cardBg}`}>
                   <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-amber-500/20 border border-cyan-500/30 flex items-center justify-center">
@@ -1235,7 +1239,7 @@ export const EvrisHub: React.FC = () => {
                               ? 'bg-white text-black border-white font-medium'
                               : isCyberpunk
                               ? 'bg-[#FCEE0A] text-black border-[#FCEE0A] font-semibold'
-                              : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-purple-500/40 shadow-md shadow-purple-900/20'
+                              : 'bg-purple-600 text-white border-purple-500/40 shadow-md shadow-purple-900/20'
                             : `${cardBg}`
                         }`}
                       >
@@ -1371,8 +1375,8 @@ export const EvrisHub: React.FC = () => {
                       handleSend();
                     }
                   }}
-                  placeholder="Message à E.V.R.I.S. ou commande (/tasks, /task ..., /notes, /note ..., /mode pro, /help)..."
-                  className="flex-1 bg-transparent px-2.5 py-1.5 text-xs sm:text-sm outline-none resize-none max-h-36 placeholder:text-zinc-500"
+                  placeholder="Message à E.V.R.I.S. ou commande (/tasks, /task, /notes, /mode, /help)..."
+                  className="flex-1 bg-transparent px-2.5 py-1.5 text-xs sm:text-sm leading-normal outline-none resize-none max-h-36 placeholder:text-zinc-500"
                 />
                 {messages.length > 0 && (
                   <button
