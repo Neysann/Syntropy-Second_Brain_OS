@@ -2,6 +2,21 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V2.7.7] - 2026-11-20 (Interface Complète E.V.R.I.S. & Pont de Données Syntropy OS)
+--------------------------------------------------------------------------------
+1. Activation du Bouton Assistant IA dans la Barre Latérale (`src/components/Sidebar.tsx`, `src/app/evris/page.tsx`) :
+- Remplacement du bouton d'attente « Assistant (Bientôt) » par un lien natif **E.V.R.I.S. [IA]** vers la nouvelle page dédiée `/evris`, respectant tous les thèmes de Syntropy OS (Liquid Glass + 8 palettes d'accentuation, Sombre/Clair/OLED, Nothing OS `NDot57` et Cyberpunk HUD).
+
+2. Interface Multi-Vues E.V.R.I.S. (`src/components/evris/EvrisHub.tsx`, `src/types/evris.ts`, `src/lib/evrisClient.ts`) :
+- **En-tête HUD & SystemPulse** : barre supérieure 3px adaptative, sélecteur de routage 4 modes (`AUTO`, `FAST • 4B`, `PRO • 9B`, `LIMITLESS`), indicateur de connexion temps réel (`LOCAL ONLINE` / `UI LOCALE`), bouton **ApprovalBell** avec modale de confirmation de sécurité `[Y]/[N]` pour les actions PC sensibles et pastille de modèle actif.
+- **Chat Live Streaming & Pont Syntropy OS** :
+  * Client WebSocket (`/ws/chat`) avec fallback REST (`POST /api/chat`), affichage en direct des badges d'outils exécutés (`⚡ tool_name`), du tier (`FAST` / `PRO` / `LIMITLESS`), du domaine, de la latence (`ms`) et de la vitesse (`tok/s`).
+  * Injection activable du contexte temps réel Syntropy OS (tâches actives, notes récentes, projets PARA, série d'habitudes) dans les requêtes envoyées à E.V.R.I.S.
+  * Commandes locales Syntropy OS opérationnelles immédiatement (même sans backend FastAPI démarré) : `/tasks`, `/task <titre>`, `/notes [recherche]`, `/note <titre> :: <contenu>`, `/mode`, `/pro`, `/confirm`, `/websearch`, `/ram`, `/memories`, `/status`, `/clear`, `/help`, plus actions en 1 clic `→ Note`, `→ Tâche` et `Copier` sur chaque réponse.
+- **Télémétrie & Modèles** : suivi des 3 tiers Qwen 3.5 (`qwen3.5:4b`, `qwen3.5:9b`, `huihui_ai/qwen3.5-abliterated:9b`), jauges CPU/RAM Workstation, garde-fou RAM 9B (`>= 5.5 Go`) et statistiques du pont Syntropy OS.
+- **Mémoires SQLite & Catalogue des 14 Outils** : gestion des faits long terme (ajout, suppression, `/forget all`) et répertoire filtrable des 10 outils natifs EVRIS + 4 outils Syntropy OS.
+- **Logs (`evris.log`) & Configuration** : visionneuse de logs filtrable par niveau (`ALL / INFO / WARN / ERROR`), configuration de l'URL locale (`http://127.0.0.1:8000`), test de connexion, bascules `/pro`, `/confirm`, `/websearch` et curseur `/ram` (`2.0 – 16.0 Go`).
+
 #### [V2.7.6] - 2026-11-17 (Épuration du README GitHub — Focus 100 % sur les Fonctionnalités & l'Architecture)
 --------------------------------------------------------------------------------
 1. Mise à jour de `README.md` :
