@@ -1,6 +1,6 @@
 {
   "name": "syntropy-os",
-  "version": "2.7.10",
+  "version": "2.7.11",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "dev:desktop": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron electron/main.js\"",
     "build": "next build",
     "build:icons": "node scripts/convert-icons.js",
-    "build:win": "node scripts/convert-icons.js && next build && electron-builder --win nsis",
+    "build:win": "node scripts/convert-icons.js && next build && electron-builder --config config/electron-builder.json --win nsis",
     "start": "next start",
     "deploy": "next build && npx firebase-tools deploy --only hosting",
     "release": "node scripts/publish.js",

@@ -18,7 +18,7 @@ echo   4. Packager l'executable officiel Windows (.exe)
 echo.
 echo ---------------------------------------------------------------------
 
-cd /d "%~dp0"
+cd /d "%~dp0.."
 
 echo [0/3] Liberation des fichiers verrouilles...
 taskkill /F /IM "Syntropy OS.exe" >nul 2>&1

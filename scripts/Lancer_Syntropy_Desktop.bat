@@ -12,7 +12,7 @@ echo  Version : 2.7.8
 echo.
 echo ---------------------------------------------------------------------
 
-cd /d "%~dp0"
+cd /d "%~dp0.."
 
 echo [1/1] Recherche de l'application officielle Syntropy OS...
 echo.

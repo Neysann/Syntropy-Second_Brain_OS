@@ -41,19 +41,14 @@ function copyRecursiveSync(src, dest, ignoreList = []) {
 
 if (gitDir !== rootDir) {
   console.log('📦 Synchronisation des fichiers vers second-brain-os/...');
-  const dirsToSync = ['src', 'public', 'electron', '.github', 'scripts'];
+  const dirsToSync = ['src', 'public', 'electron', '.github', 'scripts', 'config', 'docs'];
   const filesToSync = [
     'package.json',
-    'patchnote.txt',
     'next.config.ts',
     'tsconfig.json',
     'firebase.json',
-    'firestore.rules',
     '.firebaserc',
     'README.md',
-    'electron-builder.json',
-    'Lancer_Syntropy_Desktop.bat',
-    'Synchroniser_Et_Deployer.bat',
   ];
   const ignoreList = [
     'node_modules',

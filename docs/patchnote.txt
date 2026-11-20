@@ -2,6 +2,20 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V2.7.11] - 2026-11-20 (Rangement Complet de la Racine — `config/`, `docs/` & `scripts/`)
+--------------------------------------------------------------------------------
+1. Regroupement des Fichiers de Configuration (`config/`) :
+- Déplacement de `electron-builder.json`, `firestore.rules`, `firestore.indexes.json` et `.env.example` dans `config/`.
+- Mise à jour de `package.json` (`--config config/electron-builder.json`), `.github/workflows/release.yml`, `firebase.json` et `scripts/publish.js`.
+- Nettoyage des anciennes règles d'en-têtes mortes `v2.5.0` dans `firebase.json`.
+
+2. Regroupement de la Documentation et des Lanceurs (`docs/`, `scripts/`) :
+- Déplacement de `patchnote.txt` dans `docs/patchnote.txt` (aux côtés de `docs/PLAN_IA.md`) et mise à jour des références dans `GEMINI.md` et `.agents/rules/auto-deploy.md`.
+- Déplacement de `Lancer_Syntropy_Desktop.bat` et `Synchroniser_Et_Deployer.bat` dans `scripts/` avec résolution du répertoire racine (`cd /d "%~dp0.."`).
+
+3. Anti-Pollution TypeScript (`tsconfig.json`) :
+- Redirection de `tsBuildInfoFile` vers `.next/cache/tsconfig.tsbuildinfo` afin que `tsconfig.tsbuildinfo` ne soit plus généré à la racine du projet.
+
 #### [V2.7.10] - 2026-11-20 (Réorganisation Modulaire de l'Arborescence `src/components/`, `src/lib/` & `docs/`)
 --------------------------------------------------------------------------------
 1. Structuration par Domaine de `src/components/` (23 composants déplacés) :
