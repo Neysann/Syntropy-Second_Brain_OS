@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07111c">
+  <title>Evris — noyau ARC 25 × 25</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07111c;
+      --panel: #0c1926;
+      --panel-raised: #101f2d;
+      --line: #203344;
+      --muted: #8193a1;
+      --text: #e9f2f5;
+      --cyan: #22d7e8;
+      --cyan-soft: #a8f5fa;
+      --amber: #ffa337;
+      --violet: #a89aff;
+      --led-size: 1fr;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 76% 16%, rgba(27, 102, 126, .13), transparent 36rem),
+        radial-gradient(ellipse at 9% 78%, rgba(28, 61, 92, .12), transparent 32rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      letter-spacing: .01em;
+    }
+    .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 26px 0 30px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 27px; border-bottom: 1px solid rgba(119, 154, 176, .15); }
+    .brand { display: flex; gap: 11px; align-items: center; color: #dce9ed; font-size: 12px; font-weight: 750; letter-spacing: .18em; }
+    .brand-mark { display: grid; width: 28px; height: 28px; place-items: center; color: var(--cyan); border: 1px solid rgba(34,215,232,.35); border-radius: 8px; background: rgba(34,215,232,.07); font-size: 15px; }
+    .top-note, .eyebrow, .micro-label { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+    .intro { padding: 35px 0 26px; }
+    .eyebrow { display: flex; align-items: center; gap: 9px; color: var(--cyan); }
+    .eyebrow::before { content: ""; width: 19px; height: 1px; background: var(--cyan); opacity: .7; }
+    h1 { margin: 12px 0 8px; font-size: clamp(29px, 4.3vw, 43px); line-height: 1.08; font-weight: 620; letter-spacing: -.045em; }
+    .intro p { max-width: 640px; margin: 0; color: #91a3b0; font-size: 14px; line-height: 1.7; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(330px, .95fr); gap: 18px; align-items: stretch; }
+    .panel { border: 1px solid var(--line); border-radius: 15px; background: linear-gradient(145deg, rgba(16,31,45,.98), rgba(9,22,33,.98)); box-shadow: 0 18px 60px rgba(0,0,0,.18); }
+    .matrix-panel { padding: 20px; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .micro-label { font-size: 9px; }
+    .matrix-dim { margin-top: 5px; color: #d5e2e6; font-size: 13px; font-weight: 550; }
+    .matrix-actions { display: flex; align-items: center; gap: 8px; }
+    .state-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; color: #b5c6ce; border: 1px solid rgba(113,151,170,.19); border-radius: 99px; background: rgba(2,11,18,.35); font-size: 11px; white-space: nowrap; }
+    .state-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 9px var(--cyan); }
+    .matrix-stage { display: grid; min-height: 438px; place-items: center; margin: 18px 0 15px; padding: 21px; border: 1px solid #172b3b; border-radius: 12px; background: radial-gradient(ellipse at center, rgba(14,55,71,.28), transparent 60%), #06111b; overflow: hidden; }
+    .matrix-frame { width: min(100%, 388px); padding: clamp(9px, 2vw, 16px); border: 1px solid #294253; border-radius: 9px; background: #091521; box-shadow: 0 0 0 5px rgba(10,25,38,.8), 0 17px 42px rgba(0,0,0,.34), inset 0 0 26px rgba(0,0,0,.5); }
+    .matrix { display: grid; grid-template-columns: repeat(var(--matrix-size, 25), minmax(0, 1fr)); gap: clamp(2px, .58vw, 5px); aspect-ratio: 1; }
+    .led { min-width: 0; border-radius: 2px; background: #111d28; opacity: .75; transition: background-color 100ms linear, box-shadow 120ms linear, opacity 120ms linear; }
+    .led.on { opacity: var(--brightness, .88); box-shadow: 0 0 7px color-mix(in srgb, currentColor 43%, transparent); }
+    .matrix-caption { display: flex; align-items: center; justify-content: space-between; color: #718695; font-size: 10px; }
+    .pixel-legend { display: flex; gap: 12px; align-items: center; }
+    .pixel-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .swatch { width: 6px; height: 6px; border-radius: 2px; background: var(--cyan); }
+    .swatch.white { background: #e3f5f8; }
+    .swatch.orange { background: var(--amber); }
+    .control-panel { display: flex; flex-direction: column; padding: 20px; }
+    .control-title { margin: 0; font-size: 16px; font-weight: 590; letter-spacing: -.02em; }
+    .control-copy { margin: 5px 0 17px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .state-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .state-button { position: relative; min-height: 60px; padding: 10px 11px; color: #b5c5cd; text-align: left; border: 1px solid #203546; border-radius: 9px; background: rgba(7,18,28,.62); cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
+    .state-button:hover { border-color: #426175; background: #102332; transform: translateY(-1px); }
+    .state-button[aria-pressed="true"] { color: #e7f8fa; border-color: rgba(34,215,232,.52); background: rgba(22,91,103,.18); box-shadow: inset 0 0 0 1px rgba(34,215,232,.08); }
+    .state-button[aria-pressed="true"]::after { position: absolute; top: 11px; right: 11px; width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); content: ""; }
+    .button-icon { display: block; margin-bottom: 6px; color: var(--cyan); font-size: 13px; line-height: 1; }
+    .state-button[data-state="happy"] .button-icon, .state-button[data-state="alert"] .button-icon, .state-button[data-state="error"] .button-icon { color: var(--amber); }
+    .button-name { display: block; font-size: 11px; font-weight: 570; }
+    .separator { height: 1px; margin: 19px 0 15px; background: rgba(119,154,176,.14); }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .setting-name { color: #c4d1d7; font-size: 12px; }
+    .setting-value { color: var(--cyan); font-variant-numeric: tabular-nums; font-size: 11px; }
+    input[type="range"] { width: 100%; height: 3px; margin: 13px 0 5px; accent-color: var(--cyan); cursor: pointer; }
+    .range-ends { display: flex; justify-content: space-between; color: #617482; font-size: 9px; }
+    .event-box { display: flex; min-height: 66px; gap: 11px; align-items: flex-start; margin-top: auto; padding: 12px; border: 1px solid #1a2d3d; border-radius: 9px; background: rgba(5,15,24,.52); }
+    .event-icon { display: grid; flex: 0 0 25px; width: 25px; height: 25px; place-items: center; color: var(--cyan); border-radius: 7px; background: rgba(34,215,232,.09); font-size: 12px; }
+    .event-copy { min-width: 0; }
+    .event-title { margin: 1px 0 4px; color: #d6e3e7; font-size: 11px; font-weight: 570; }
+    .event-detail { margin: 0; color: #8498a5; font-size: 10px; line-height: 1.45; }
+    .event-time { margin-left: auto; color: #607481; font-size: 9px; white-space: nowrap; }
+    footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 17px; color: #637684; font-size: 10px; }
+    footer strong { color: #93a8b4; font-weight: 550; }
+    @media (max-width: 780px) {
+      .shell { width: min(560px, calc(100% - 28px)); padding-top: 17px; }
+      .topbar { padding-bottom: 18px; }
+      .intro { padding: 27px 0 20px; }
+      .workspace { grid-template-columns: 1fr; }
+      .matrix-stage { min-height: auto; padding: clamp(18px, 5vw, 35px); }
+      .matrix-frame { width: min(100%, 390px); }
+      .control-panel { min-height: 470px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✳</span><span>EVRIS <span style="color:#718795;font-weight:500">/ LAB</span></span></div>
+      <div class="top-note">Prototype local · interface de simulation</div>
+    </header>
+
+    <section class="intro">
+      <div class="eyebrow">Signature visuelle · matrice 25 × 25</div>
+      <h1>Le noyau d’Evris s’anime.</h1>
+      <p>Le noyau ARC change de rythme selon l’interaction choisie : écoute, réflexion, réponse ou veille.</p>
+    </section>
+
+    <section class="workspace" aria-label="Simulateur de matrice LED">
+      <article class="panel matrix-panel">
+        <div class="panel-head">
+          <div><div class="micro-label">Matrice RGB</div><div class="matrix-dim"><span id="matrixDimensions">25 × 25</span> <span style="color:#718795;font-weight:400">/ <span id="pixelCount">625</span> pixels</span></div></div>
+          <div class="matrix-actions">
+            <div class="state-chip"><span class="state-dot" id="stateDot"></span><span id="stateName">Au repos</span></div>
+          </div>
+        </div>
+        <div class="matrix-stage">
+          <div class="matrix-frame"><div class="matrix" id="matrix" role="img" aria-label="Avatar pixel d’Evris, matrice LED 25 par 25"></div></div>
+        </div>
+        <div class="matrix-caption">
+          <span>25 × 25 · 625 LED · APERÇU EN TEMPS RÉEL</span>
+          <div class="pixel-legend"><span><i class="swatch"></i>cyan</span><span><i class="swatch white"></i>coque</span><span><i class="swatch orange"></i>accent</span></div>
+        </div>
+      </article>
+
+      <aside class="panel control-panel">
+        <div class="micro-label" style="margin-bottom:8px">Interactions simulées</div>
+        <h2 class="control-title">Comment va Evris ?</h2>
+        <p class="control-copy">Chaque état déclenche une expression et une animation dédiées.</p>
+        <div class="state-grid" role="group" aria-label="Choisir un état d’Evris">
+          <button class="state-button" data-state="idle" aria-pressed="true"><span class="button-icon">◌</span><span class="button-name">Au repos</span></button>
+          <button class="state-button" data-state="listening" aria-pressed="false"><span class="button-icon">◖</span><span class="button-name">À l’écoute</span></button>
+          <button class="state-button" data-state="thinking" aria-pressed="false"><span class="button-icon">···</span><span class="button-name">En réflexion</span></button>
+          <button class="state-button" data-state="speaking" aria-pressed="false"><span class="button-icon">≋</span><span class="button-name">En réponse</span></button>
+          <button class="state-button" data-state="happy" aria-pressed="false"><span class="button-icon">✳</span><span class="button-name">Ravi</span></button>
+          <button class="state-button" data-state="alert" aria-pressed="false"><span class="button-icon">!</span><span class="button-name">Attention</span></button>
+          <button class="state-button" data-state="error" aria-pressed="false"><span class="button-icon">×</span><span class="button-name">Incident</span></button>
+          <button class="state-button" data-state="sleep" aria-pressed="false"><span class="button-icon">☾</span><span class="button-name">En veille</span></button>
+        </div>
+        <div class="separator"></div>
+        <div class="setting-row"><span class="setting-name">Intensité lumineuse</span><output class="setting-value" id="brightnessValue">88 %</output></div>
+        <input id="brightness" type="range" min="20" max="100" value="88" aria-label="Intensité lumineuse">
+        <div class="range-ends"><span>LED discrètes</span><span>Pleine puissance</span></div>
+        <div class="event-box" aria-live="polite">
+          <span class="event-icon" id="eventIcon">✳</span>
+          <div class="event-copy"><div class="event-title" id="eventTitle">Evris est disponible.</div><p class="event-detail" id="eventDetail">La matrice attend une interaction.</p></div>
+          <span class="event-time" id="eventTime">MAINTENANT</span>
+        </div>
+      </aside>
+    </section>
+    <footer><span><strong>EVRIS / RGB</strong> · maquette d’expression</span><span>Animations locales, sans connexion matérielle</span></footer>
+  </main>
+
+  <script>
+    const matrix = document.getElementById('matrix');
+    const ledNodes = [];
+    const matrixSize = 25;
+    let currentState = 'idle';
+    const palette = { N: '#061522', D: '#16485b', C: '#22d7e8', W: '#dff6f8', O: '#ffa337', V: '#a89aff', S: '#83a8b8' };
+
+    const states = {
+      idle:      { name: 'Au repos',     title: 'Evris est disponible.', detail: 'Le noyau attend votre prochaine interaction.', icon: '◌', color: '#22d7e8' },
+      listening: { name: 'À l’écoute',   title: 'Evris vous écoute.', detail: 'Un signal rejoint le noyau ARC.', icon: '◖', color: '#22d7e8' },
+      thinking:  { name: 'En réflexion', title: 'Evris cherche une réponse.', detail: 'Les points du noyau se synchronisent.', icon: '···', color: '#a89aff' },
+      speaking:  { name: 'En réponse',   title: 'Evris vous répond.', detail: 'Une impulsion rayonne depuis le noyau.', icon: '≋', color: '#22d7e8' },
+      happy:     { name: 'Ravi',         title: 'Bonne nouvelle.', detail: 'Le noyau s’illumine avec une étincelle ambre.', icon: '✳', color: '#ffa337' },
+      alert:     { name: 'Attention',    title: 'Evris attire votre attention.', detail: 'L’arc pulse en ambre.', icon: '!', color: '#ffa337' },
+      error:     { name: 'Incident',     title: 'Quelque chose a interrompu Evris.', detail: 'Le noyau affiche un signal de diagnostic.', icon: '×', color: '#ffa337' },
+      sleep:     { name: 'En veille',    title: 'Evris passe en veille.', detail: 'Le noyau ralentit et baisse sa lumière.', icon: '☾', color: '#6f91a3' }
+    };
+
+    function createGrid() { return Array.from({ length: matrixSize }, () => Array(matrixSize).fill('')); }
+    function put(grid, x, y, color) {
+      x = Math.round(x); y = Math.round(y);
+      if (x >= 0 && x < matrixSize && y >= 0 && y < matrixSize) grid[y][x] = color;
+    }
+    function span(grid, y, from, to, color) { for (let x = from; x <= to; x += 1) put(grid, x, y, color); }
+    function line(grid, x0, y0, x1, y1, color) {
+      x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+      const dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+      const dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+      let err = dx + dy;
+      while (true) {
+        put(grid, x0, y0, color);
+        if (x0 === x1 && y0 === y1) break;
+        const twice = 2 * err;
+        if (twice >= dy) { err += dy; x0 += sx; }
+        if (twice <= dx) { err += dx; y0 += sy; }
+      }
+    }
+    function ring(grid, center, radius, color, thickness = .55, segments = 0, rotation = 0) {
+      for (let y = 0; y < matrixSize; y += 1) for (let x = 0; x < matrixSize; x += 1) {
+        const dx = x - center, dy = y - center, distance = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, dx) + rotation;
+        const gap = segments && Math.abs(Math.sin(angle * segments / 2)) < .14;
+        if (Math.abs(distance - radius) <= thickness && !gap) put(grid, x, y, color);
+      }
+    }
+    function point(center, radius, angle) { return [center + Math.cos(angle) * radius, center + Math.sin(angle) * radius]; }
+
+    const glyphs = {
+      '-': ['00000', '00000', '11111', '00000', '00000'],
+      '?': ['01110', '10001', '00010', '00100', '00100'],
+      '...': ['00000', '00000', '10101', '00000', '00000'],
+      '!': ['00100', '00100', '00100', '00000', '00100'],
+      '*': ['00100', '10101', '01110', '10101', '00100'],
+      x: ['10001', '01010', '00100', '01010', '10001'],
+      _: ['00000', '00000', '00000', '00000', '11111']
+    };
+    function clearGlyphZone(grid) {
+      for (let y = 10; y <= 14; y += 1) for (let x = 10; x <= 14; x += 1) grid[y][x] = '';
+    }
+    function drawGlyph(grid, symbol, color) {
+      glyphs[symbol].forEach((row, y) => [...row].forEach((bit, x) => { if (bit === '1') put(grid, 10 + x, 10 + y, color); }));
+    }
+
+    function drawCore(elapsed) {
+      const grid = createGrid(), center = 12, outer = 10.5, middle = 7.5, inner = 5.5;
+      const rotation = currentState === 'thinking' || currentState === 'happy' ? elapsed * .00018 : 0;
+      let outerColor = currentState === 'alert' || currentState === 'error' ? 'O' : (currentState === 'sleep' ? 'D' : 'C');
+      if (currentState === 'alert' && Math.floor(elapsed / 260) % 2) outerColor = 'D';
+      if (currentState === 'error' && Math.floor(elapsed / 180) % 2) outerColor = 'O';
+
+      ring(grid, center, outer, outerColor, .55, 4, rotation);
+      ring(grid, center, middle, currentState === 'thinking' ? 'V' : 'D', .55, 0);
+      ring(grid, center, inner, currentState === 'error' ? 'O' : (currentState === 'sleep' ? 'S' : 'W'), .55, 0);
+
+      const orbit = 8.75;
+      const orbitDot = (angle, color) => {
+        const [x, y] = point(center, orbit, angle);
+        put(grid, x, y, color);
+      };
+      const cycle = (elapsed % 1800) / 1800;
+
+      if (currentState === 'idle') {
+        orbitDot(elapsed * .000075, 'O');
+        ring(grid, center, inner + .25 + .25 * Math.sin(elapsed * .002), 'C', .55, 0);
+      } else if (currentState === 'sleep') {
+        orbitDot(-Math.PI / 2 + elapsed * .000025, 'D');
+      } else if (currentState === 'listening') {
+        const startAngle = -Math.PI * .72;
+        for (let tail = 2; tail >= 0; tail -= 1) {
+          const t = Math.max(0, cycle - tail * .06);
+          const radius = outer - (outer - inner) * t;
+          const [x, y] = point(center, radius, startAngle + t * .24);
+          put(grid, x, y, tail === 0 ? 'W' : 'O');
+        }
+        ring(grid, center, inner + .7 + 1.1 * (1 - cycle), 'C', .55, 0);
+      } else if (currentState === 'thinking') {
+        ring(grid, center, middle - .8, 'C', .55, 4, -elapsed * .0003);
+        for (let i = 0; i < 4; i += 1) orbitDot(elapsed * .00024 + i * Math.PI / 2, i === Math.floor(cycle * 4) ? 'W' : 'V');
+      } else if (currentState === 'speaking') {
+        const wave = inner + .8 + cycle * (outer - inner - 1.6);
+        ring(grid, center, wave, 'C', .55, cycle > .45 ? 4 : 0, elapsed * .002);
+        if (cycle > .3) ring(grid, center, wave - 1.6, 'D', .55, 4, -elapsed * .0015);
+        for (let i = 0; i < 4; i += 1) {
+          const angle = -Math.PI / 2 + i * Math.PI / 2;
+          const [x, y] = point(center, Math.max(inner + .8, wave - 1), angle);
+          put(grid, x, y, i === 0 ? 'W' : 'O');
+        }
+      } else if (currentState === 'happy') {
+        for (let i = 0; i < 4; i += 1) orbitDot(elapsed * .00015 + i * Math.PI / 2, i % 2 ? 'C' : 'O');
+        ring(grid, center, middle, 'C', .55, 8, rotation);
+      } else if (currentState === 'alert') {
+        for (let i = 0; i < 4; i += 1) {
+          const a = -Math.PI / 2 + i * Math.PI / 2;
+          const [x, y] = point(center, outer - 1.3, a + cycle * .25);
+          put(grid, x, y, 'O');
+        }
+        ring(grid, center, inner + .8 + cycle, 'O', .55, 4, rotation);
+      } else if (currentState === 'error') {
+        orbitDot(-Math.PI / 4, 'O'); orbitDot(Math.PI * .75, 'O');
+        ring(grid, center, middle - 1, 'O', .55, 4, rotation);
+      }
+
+      const symbolByState = { idle: '-', listening: '?', thinking: '...', speaking: '!', happy: '*', alert: '!', error: 'x', sleep: '_' };
+      const colorByState = { idle: 'C', listening: 'O', thinking: 'V', speaking: 'W', happy: 'O', alert: 'O', error: 'O', sleep: 'S' };
+      clearGlyphZone(grid);
+      drawGlyph(grid, symbolByState[currentState] || '...', colorByState[currentState] || 'C');
+      return grid;
+    }
+
+    function buildMatrix() {
+      matrix.replaceChildren(); ledNodes.length = 0;
+      matrix.style.setProperty('--matrix-size', String(matrixSize));
+      for (let i = 0; i < matrixSize * matrixSize; i += 1) {
+        const led = document.createElement('span'); led.className = 'led';
+        ledNodes.push(led); matrix.appendChild(led);
+      }
+      document.getElementById('matrixDimensions').textContent = '25 × 25';
+      document.getElementById('pixelCount').textContent = '625';
+      matrix.setAttribute('aria-label', 'Avatar d’Evris sur matrice LED 25 par 25');
+    }
+    function render(elapsed) {
+      const grid = drawCore(elapsed);
+      grid.forEach((row, y) => row.forEach((key, x) => {
+        const node = ledNodes[y * matrixSize + x];
+        node.classList.toggle('on', Boolean(key));
+        node.style.backgroundColor = key ? palette[key] : '';
+        node.style.color = key ? palette[key] : '';
+      }));
+    }
+    function activateState(key) {
+      currentState = key;
+      const state = states[key];
+      document.getElementById('stateName').textContent = state.name;
+      document.getElementById('stateDot').style.backgroundColor = state.color;
+      document.getElementById('stateDot').style.boxShadow = '0 0 9px ' + state.color;
+      document.getElementById('eventIcon').textContent = state.icon;
+      document.getElementById('eventIcon').style.color = state.color;
+      document.getElementById('eventTitle').textContent = state.title;
+      document.getElementById('eventDetail').textContent = state.detail;
+      document.getElementById('eventTime').textContent = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date());
+      document.querySelectorAll('.state-button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.state === key)));
+      render(performance.now() - start);
+    }
+
+    document.querySelectorAll('.state-button').forEach(button => button.addEventListener('click', () => activateState(button.dataset.state)));
+    const brightness = document.getElementById('brightness');
+    brightness.addEventListener('input', () => {
+      const value = Number(brightness.value);
+      document.documentElement.style.setProperty('--brightness', String(value / 100));
+      document.getElementById('brightnessValue').textContent = value + ' %';
+    });
+
+    buildMatrix();
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const start = performance.now();
+    let lastFrame = -1;
+    function animate(now) {
+      const elapsed = now - start, frameIndex = Math.floor(now / 70);
+      if (frameIndex !== lastFrame) { render(reduceMotion ? 0 : elapsed); lastFrame = frameIndex; }
+      if (!reduceMotion) window.requestAnimationFrame(animate);
+    }
+    render(0);
+    if (!reduceMotion) window.requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
+
+

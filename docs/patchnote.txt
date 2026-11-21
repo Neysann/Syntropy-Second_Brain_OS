@@ -2,6 +2,18 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V2.7.12] - 2026-11-21 (Refonte Complète de l'Interface E.V.R.I.S. — Noyau ARC 25×25 Interactif & Design Épuré)
+--------------------------------------------------------------------------------
+1. Intégration Native du Noyau ARC 25×25 (`src/components/evris/EvrisArcCore.tsx`) :
+- Conversion du prototype `Evris-ARC-25x25-v1.html` en composant React `<canvas>` haute densité (625 LEDs, 0 % de lag, support `prefers-reduced-motion` et réglage d'intensité lumineuse persistant 20–100 %).
+- Machine à états temps réel reliant automatiquement les 8 animations ARC aux interactions réelles : `idle` (repos), `listening` (saisie utilisateur), `thinking` (routage/réflexion), `speaking` (streaming de réponse), `happy` (succès tâche/note/mémoire/approbation), `alert` (ApprovalBell `[Y]/[N]`), `error` (incident/hors-ligne) et `sleep` (veille automatique après 65 s d'inactivité).
+
+2. Refonte Complète Companion-First de `src/components/evris/EvrisHub.tsx` :
+- Suppression de la double barre d'en-tête et des 5 onglets d'administration encombrants au profit d'une barre supérieure unique ultra-épurée et d'une vue centrée sur la présence vivante d'E.V.R.I.S.
+- **Écran d'accueil** centré sur le Noyau ARC 25×25 (196 px), message d'état dynamique et 4 suggestions rapides discrètes.
+- **Vue conversation** avec colonne de présence continue à gauche (Noyau ARC 164 px, statut en direct, bascule Pont Syntropy, modèle actif) + fil de discussion aéré et compositeur flottant moderne.
+- **Tiroir latéral Système** (glissant à la demande) regroupant le testeur des 8 états ARC, la luminosité LED, la télémétrie Workstation, les mémoires, les logs/outils et la configuration FastAPI.
+
 #### [V2.7.11] - 2026-11-20 (Rangement Complet de la Racine — `config/`, `docs/` & `scripts/`)
 --------------------------------------------------------------------------------
 1. Regroupement des Fichiers de Configuration (`config/`) :

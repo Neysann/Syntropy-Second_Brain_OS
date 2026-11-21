@@ -2,15 +2,9 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
-  Bot,
   Send,
-  Activity,
-  Brain,
-  Terminal,
-  Sliders,
   Bell,
   ShieldAlert,
-  Sparkles,
   CheckSquare,
   FileText,
   Trash2,
@@ -21,15 +15,17 @@ import {
   Zap,
   Cpu,
   HardDrive,
+  SlidersHorizontal,
+  X,
+  RotateCcw,
+  Layers,
+  Terminal,
+  Brain,
+  Activity,
   Wifi,
   WifiOff,
-  Search,
-  Lock,
-  Globe,
-  RotateCcw,
-  X,
-  MessageSquare,
-  Layers,
+  Sparkles,
+  Sun,
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -65,23 +61,36 @@ import {
   saveEvrisUrl,
   sendEvrisBackendMessage,
 } from '@/lib/integrations/evrisClient';
+import { EvrisArcCore, EvrisCoreState, EVRIS_CORE_STATES } from './EvrisArcCore';
 
-type EvrisTab = 'chat' | 'telemetry' | 'memories' | 'logs' | 'settings';
+type DrawerTab = 'core' | 'memories' | 'system' | 'settings';
 
-const MODE_OPTIONS: { id: EvrisRoutingMode; label: string; modelHint: string }[] = [
-  { id: 'auto', label: 'AUTO', modelHint: 'qwen3.5:4b / 9b' },
-  { id: 'fast', label: 'FAST • 4B', modelHint: 'qwen3.5:4b' },
-  { id: 'pro', label: 'PRO • 9B', modelHint: 'qwen3.5:9b' },
-  { id: 'limitless', label: 'LIMITLESS', modelHint: 'qwen3.5-abliterated:9b' },
+const MODE_OPTIONS: { id: EvrisRoutingMode; label: string; short: string; modelHint: string }[] = [
+  { id: 'auto', label: 'AUTO', short: 'Auto', modelHint: 'qwen3.5:4b / 9b' },
+  { id: 'fast', label: 'FAST • 4B', short: '4B', modelHint: 'qwen3.5:4b' },
+  { id: 'pro', label: 'PRO • 9B', short: '9B', modelHint: 'qwen3.5:9b' },
+  { id: 'limitless', label: 'LIMITLESS', short: '∞', modelHint: 'qwen3.5-abliterated:9b' },
 ];
 
-const QUICK_PROMPTS: { label: string; prompt: string; badge: string }[] = [
-  { label: 'Mes tâches du jour', prompt: '/tasks', badge: 'Syntropy' },
-  { label: 'Mes notes récentes', prompt: '/notes', badge: 'Syntropy' },
-  { label: 'Créer une tâche', prompt: '/task Finaliser le pont FastAPI EVRIS', badge: 'Action' },
-  { label: 'Rapport système PC', prompt: 'Donne-moi un rapport système complet du PC.', badge: 'PC' },
-  { label: 'Cours NVDA & calcul', prompt: 'Vérifie le cours de NVDA et calcule 15000 * (1 + 0.08)**10.', badge: 'Finance' },
+const QUICK_PROMPTS: { label: string; prompt: string }[] = [
+  { label: 'Mes tâches du jour', prompt: '/tasks' },
+  { label: 'Mes notes récentes', prompt: '/notes' },
+  { label: 'Rapport système PC', prompt: 'Donne-moi un rapport système complet du PC.' },
+  { label: 'Nouvelle tâche rapide', prompt: '/task Préparer la démo E.V.R.I.S.' },
 ];
+
+const CORE_STATE_LIST: EvrisCoreState[] = [
+  'idle',
+  'listening',
+  'thinking',
+  'speaking',
+  'happy',
+  'alert',
+  'error',
+  'sleep',
+];
+
+const BRIGHTNESS_STORAGE_KEY = 'syntropy_evris_arc_brightness_v1';
 
 export const EvrisHub: React.FC = () => {
   const { theme } = useTheme();
@@ -93,7 +102,7 @@ export const EvrisHub: React.FC = () => {
   const isNothing = settings.uiStyle === 'nothing';
   const isCyberpunk = settings.uiStyle === 'cyberpunk';
 
-  const [activeTab, setActiveTab] = useState<EvrisTab>('chat');
+  // Connexion & réglages
   const [apiUrl, setApiUrl] = useState<string>('http://127.0.0.1:8000');
   const [apiUrlDraft, setApiUrlDraft] = useState<string>('http://127.0.0.1:8000');
   const [backendConnected, setBackendConnected] = useState<boolean>(false);
@@ -118,26 +127,90 @@ export const EvrisHub: React.FC = () => {
   const [ramThresholdGb, setRamThresholdGb] = useState<number>(5.5);
   const [injectSyntropyContext, setInjectSyntropyContext] = useState<boolean>(true);
 
+  // Conversation
   const [messages, setMessages] = useState<EvrisMessage[]>([]);
   const [input, setInput] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
+  const [isStreamingTokens, setIsStreamingTokens] = useState<boolean>(false);
   const [liveStatusLine, setLiveStatusLine] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [savedMsgFeedback, setSavedMsgFeedback] = useState<string | null>(null);
 
+  // Noyau ARC 25x25 — états dynamiques
+  const [arcBrightness, setArcBrightness] = useState<number>(88);
+  const [manualPreviewState, setManualPreviewState] = useState<EvrisCoreState | null>(null);
+  const [transientState, setTransientState] = useState<EvrisCoreState | null>(null);
+  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [isSleeping, setIsSleeping] = useState<boolean>(false);
+
+  // Tiroir latéral Système
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+  const [drawerTab, setDrawerTab] = useState<DrawerTab>('core');
+
+  // Mémoires, Logs, Outils, Approvals
   const [memories, setMemories] = useState<EvrisMemory[]>([]);
   const [newMemCategory, setNewMemCategory] = useState<string>('preference');
   const [newMemContent, setNewMemContent] = useState<string>('');
-  const [toolFilter, setToolFilter] = useState<'all' | 'pc' | 'research' | 'memory' | 'syntropy'>('all');
-
   const [logs, setLogs] = useState<EvrisLogEntry[]>([]);
   const [logLevelFilter, setLogLevelFilter] = useState<'ALL' | 'INFO' | 'WARN' | 'ERROR'>('ALL');
-
   const [approvals, setApprovals] = useState<EvrisApprovalRequest[]>([]);
   const [activeApproval, setActiveApproval] = useState<EvrisApprovalRequest | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const transientTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sleepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const pulseTransientState = useCallback((st: EvrisCoreState, durationMs = 2600) => {
+    if (transientTimerRef.current) clearTimeout(transientTimerRef.current);
+    setTransientState(st);
+    setIsSleeping(false);
+    transientTimerRef.current = setTimeout(() => {
+      setTransientState(null);
+    }, durationMs);
+  }, []);
+
+  const resetSleepTimer = useCallback(() => {
+    setIsSleeping(false);
+    if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);
+    sleepTimerRef.current = setTimeout(() => {
+      setIsSleeping(true);
+    }, 65000);
+  }, []);
+
+  useEffect(() => {
+    resetSleepTimer();
+    return () => {
+      if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);
+      if (transientTimerRef.current) clearTimeout(transientTimerRef.current);
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    };
+  }, [resetSleepTimer]);
+
+  // État calculé en temps réel du noyau ARC 25x25
+  const effectiveCoreState: EvrisCoreState = useMemo(() => {
+    if (manualPreviewState) return manualPreviewState;
+    if (approvals.length > 0 || activeApproval) return 'alert';
+    if (transientState === 'error') return 'error';
+    if (isStreamingTokens) return 'speaking';
+    if (isSending) return 'thinking';
+    if (transientState) return transientState;
+    if (isTyping) return 'listening';
+    if (isSleeping) return 'sleep';
+    return 'idle';
+  }, [
+    manualPreviewState,
+    approvals.length,
+    activeApproval,
+    transientState,
+    isStreamingTokens,
+    isSending,
+    isTyping,
+    isSleeping,
+  ]);
+
+  const coreMeta = EVRIS_CORE_STATES[effectiveCoreState];
 
   const appendLocalLog = useCallback(
     (level: 'INFO' | 'WARN' | 'ERROR', source: string, message: string) => {
@@ -156,7 +229,7 @@ export const EvrisHub: React.FC = () => {
     []
   );
 
-  // Construction du contexte temps réel Syntropy OS envoyé à EVRIS
+  // Contexte temps réel Syntropy OS
   const syntropyContext = useMemo<EvrisSyntropyContext>(() => {
     const pendingTasks = tasks.filter((t) => t.status !== 'done');
     return {
@@ -185,11 +258,19 @@ export const EvrisHub: React.FC = () => {
     };
   }, [tasks, notes, projects, currentStreak]);
 
-  // Chargement initial depuis localStorage
+  // Chargement initial localStorage
   useEffect(() => {
     const savedUrl = getSavedEvrisUrl();
     setApiUrl(savedUrl);
     setApiUrlDraft(savedUrl);
+
+    try {
+      const savedBright = localStorage.getItem(BRIGHTNESS_STORAGE_KEY);
+      if (savedBright) {
+        const n = Number(savedBright);
+        if (!Number.isNaN(n) && n >= 20 && n <= 100) setArcBrightness(n);
+      }
+    } catch {}
 
     try {
       const rawCfg = localStorage.getItem(EVRIS_SETTINGS_STORAGE_KEY);
@@ -210,9 +291,7 @@ export const EvrisHub: React.FC = () => {
       const rawMsgs = localStorage.getItem(EVRIS_MESSAGES_STORAGE_KEY);
       if (rawMsgs) {
         const parsed = JSON.parse(rawMsgs);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
-        }
+        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
       }
     } catch {}
 
@@ -239,10 +318,9 @@ export const EvrisHub: React.FC = () => {
       }
     } catch {}
 
-    appendLocalLog('INFO', 'ui', 'Interface E.V.R.I.S. initialisée dans Syntropy OS.');
+    appendLocalLog('INFO', 'ui', 'Noyau ARC 25×25 & interface E.V.R.I.S. initialisés.');
   }, [appendLocalLog]);
 
-  // Persistance locale des messages, mémoires et préférences
   useEffect(() => {
     try {
       localStorage.setItem(EVRIS_MESSAGES_STORAGE_KEY, JSON.stringify(messages.slice(-60)));
@@ -271,12 +349,17 @@ export const EvrisHub: React.FC = () => {
     } catch {}
   }, [routingMode, proEnabled, confirmRisky, webSearchEnabled, ramThresholdGb, injectSyntropyContext]);
 
-  // Auto-scroll du flux de discussion
+  useEffect(() => {
+    try {
+      localStorage.setItem(BRIGHTNESS_STORAGE_KEY, String(arcBrightness));
+    } catch {}
+  }, [arcBrightness]);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, liveStatusLine]);
 
-  // Vérification & synchronisation avec le serveur FastAPI local (si démarré)
+  // Synchronisation backend FastAPI local
   const syncBackend = useCallback(
     async (targetUrl: string, silent = false) => {
       if (!silent) setIsCheckingBackend(true);
@@ -308,20 +391,17 @@ export const EvrisHub: React.FC = () => {
 
         if (!silent) {
           appendLocalLog('INFO', 'bridge', `Connecté au serveur EVRIS local (${targetUrl}).`);
+          pulseTransientState('happy', 1800);
         }
       } else {
         setBackendConnected(false);
         if (!silent) {
-          appendLocalLog(
-            'WARN',
-            'bridge',
-            `Backend EVRIS hors ligne (${targetUrl}) — mode interface locale + pont Syntropy actif.`
-          );
+          appendLocalLog('WARN', 'bridge', `Backend hors ligne (${targetUrl}) — pont local actif.`);
         }
       }
       if (!silent) setIsCheckingBackend(false);
     },
-    [appendLocalLog]
+    [appendLocalLog, pulseTransientState]
   );
 
   useEffect(() => {
@@ -330,11 +410,11 @@ export const EvrisHub: React.FC = () => {
     return () => clearInterval(interval);
   }, [apiUrl, syncBackend]);
 
-  // Helpers de mise à jour des réglages (UI + API si connecté)
   const applyMode = async (mode: EvrisRoutingMode) => {
+    resetSleepTimer();
     setRoutingMode(mode);
     setModelsStatus((prev) => ({ ...prev, routing_mode: mode }));
-    appendLocalLog('INFO', 'router', `Mode de routage basculé sur ${mode.toUpperCase()}.`);
+    appendLocalLog('INFO', 'router', `Mode de routage : ${mode.toUpperCase()}.`);
     if (backendConnected) {
       await patchEvrisSettings(apiUrl, { routing_mode: mode });
     }
@@ -348,14 +428,26 @@ export const EvrisHub: React.FC = () => {
     if (key === 'confirm_risky_actions') setConfirmRisky(Boolean(value));
     if (key === 'web_search_enabled') setWebSearchEnabled(Boolean(value));
     if (key === 'pro_min_free_ram_gb') setRamThresholdGb(Number(value));
-
     appendLocalLog('INFO', 'settings', `Paramètre ${key} = ${value}`);
     if (backendConnected) {
       await patchEvrisSettings(apiUrl, { [key]: value });
     }
   };
 
-  // Sauvegarde d'une réponse EVRIS en Note ou Tâche Syntropy OS
+  const handleInputChange = (val: string) => {
+    setInput(val);
+    resetSleepTimer();
+    setManualPreviewState(null);
+    if (val.trim().length > 0) {
+      setIsTyping(true);
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => setIsTyping(false), 2400);
+    } else {
+      setIsTyping(false);
+    }
+  };
+
+  // Sauvegarde d'une réponse en Note / Tâche Syntropy OS
   const handleSaveReplyToNote = async (msg: EvrisMessage) => {
     const firstLine =
       msg.content
@@ -371,7 +463,8 @@ export const EvrisHub: React.FC = () => {
       isPinned: false,
     });
     setSavedMsgFeedback(`note:${msg.id}`);
-    appendLocalLog('INFO', 'syntropy', `Réponse enregistrée dans les Notes Syntropy OS (« ${firstLine} »).`);
+    pulseTransientState('happy', 2200);
+    appendLocalLog('INFO', 'syntropy', `Réponse enregistrée en Note (« ${firstLine} »).`);
     setTimeout(() => setSavedMsgFeedback(null), 1600);
   };
 
@@ -391,7 +484,8 @@ export const EvrisHub: React.FC = () => {
       tags: ['evris'],
     });
     setSavedMsgFeedback(`task:${msg.id}`);
-    appendLocalLog('INFO', 'syntropy', `Tâche créée dans Syntropy OS (« ${firstLine} »).`);
+    pulseTransientState('happy', 2200);
+    appendLocalLog('INFO', 'syntropy', `Tâche créée (« ${firstLine} »).`);
     setTimeout(() => setSavedMsgFeedback(null), 1600);
   };
 
@@ -401,41 +495,27 @@ export const EvrisHub: React.FC = () => {
     setTimeout(() => setCopiedId(null), 1400);
   };
 
-  // Gestion locale des commandes Syntropy OS & slash commands EVRIS
+  // Commandes locales & Pont Syntropy OS
   const tryHandleLocalCommand = async (rawText: string): Promise<EvrisMessage | null> => {
     const trimmed = rawText.trim();
     const lower = trimmed.toLowerCase();
     const nowIso = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
-    // 1. /clear
     if (lower === '/clear') {
       setMessages([]);
-      appendLocalLog('INFO', 'chat', 'Historique de conversation effacé (mémoires préservées).');
-      return {
-        id: `sys-${Date.now()}`,
-        role: 'assistant',
-        content: 'Historique de conversation effacé. Les mémoires long terme restent intactes.',
-        tier: 'fast',
-        domain: 'general',
-        model: 'evris-local-ui',
-        latencyMs: 5,
-        createdAt: nowIso,
-      };
+      appendLocalLog('INFO', 'chat', 'Conversation réinitialisée.');
+      return null;
     }
 
-    // 2. /help
     if (lower === '/help' || lower === '/commands') {
       return {
         id: `sys-${Date.now()}`,
         role: 'assistant',
         content: [
-          '### Commandes E.V.R.I.S. & Pont Syntropy OS',
-          '- `/mode auto|fast|pro|limitless` — Changer de tier de routage (4B / 9B / Abliterated)',
-          '- `/task <titre>` — Créer immédiatement une tâche dans Syntropy OS',
-          '- `/tasks` — Afficher vos tâches actives Syntropy OS',
-          '- `/note <titre> :: <contenu>` — Créer immédiatement une note Markdown dans Syntropy OS',
-          '- `/notes [mot-clé]` — Lister ou rechercher dans vos notes Syntropy OS',
-          '- `/pro on|off` • `/confirm on|off` • `/websearch on|off` • `/ram <go>`',
+          '### Commandes rapides E.V.R.I.S.',
+          '- `/tasks` ou `/task <titre>` — Lire ou créer une tâche Syntropy OS',
+          '- `/notes [mot-clé]` ou `/note <titre> :: <contenu>` — Lire ou créer une note',
+          '- `/mode auto|fast|pro|limitless` — Changer de modèle',
           '- `/memories` • `/status` • `/clear`',
         ].join('\n'),
         tier: 'fast',
@@ -446,7 +526,6 @@ export const EvrisHub: React.FC = () => {
       };
     }
 
-    // 3. /mode <m>
     const modeMatch = trimmed.match(/^\/mode\s+(auto|fast|pro|limitless)$/i);
     if (modeMatch) {
       const nextMode = modeMatch[1].toLowerCase() as EvrisRoutingMode;
@@ -458,12 +537,11 @@ export const EvrisHub: React.FC = () => {
         tier: nextMode === 'auto' ? 'fast' : nextMode,
         domain: 'general',
         model: MODE_OPTIONS.find((m) => m.id === nextMode)?.modelHint || 'qwen3.5:4b',
-        latencyMs: 6,
+        latencyMs: 5,
         createdAt: nowIso,
       };
     }
 
-    // 4. /pro, /confirm, /websearch, /ram
     const toggleMatch = trimmed.match(/^\/(pro|confirm|websearch)\s+(on|off)$/i);
     if (toggleMatch) {
       const cmd = toggleMatch[1].toLowerCase();
@@ -478,7 +556,7 @@ export const EvrisHub: React.FC = () => {
         tier: 'fast',
         domain: 'general',
         model: 'evris-local-ui',
-        latencyMs: 6,
+        latencyMs: 5,
         createdAt: nowIso,
       };
     }
@@ -490,7 +568,7 @@ export const EvrisHub: React.FC = () => {
       return {
         id: `sys-${Date.now()}`,
         role: 'assistant',
-        content: `Garde-fou RAM pour les modèles 9B défini sur **${val.toFixed(1)} Go** minimum.`,
+        content: `Seuil RAM 9B défini sur **${val.toFixed(1)} Go**.`,
         tier: 'fast',
         domain: 'general',
         model: 'evris-local-ui',
@@ -499,7 +577,6 @@ export const EvrisHub: React.FC = () => {
       };
     }
 
-    // 5. Pont Syntropy OS — Créer une tâche (/task ou langage naturel)
     const createTaskMatch =
       trimmed.match(/^\/task\s+(.+)$/i) ||
       trimmed.match(/^(?:crée|cree|ajoute|nouvelle)\s+(?:une\s+)?t[aâ]che\s*:?\s+(.+)$/i);
@@ -514,26 +591,26 @@ export const EvrisHub: React.FC = () => {
         dueDate: todayStr,
         tags: ['evris'],
       });
+      pulseTransientState('happy', 2800);
       const tool: EvrisExecutedTool = {
         name: 'syntropy_create_task',
         arguments: { title: taskTitle, priority: 'high', dueDate: todayStr },
         result: { ok: true, summary: `Tâche créée : "${taskTitle}"` },
       };
-      appendLocalLog('INFO', 'syntropy', `Outil syntropy_create_task exécuté : "${taskTitle}"`);
+      appendLocalLog('INFO', 'syntropy', `syntropy_create_task : "${taskTitle}"`);
       return {
         id: `sys-${Date.now()}`,
         role: 'assistant',
-        content: `Tâche ajoutée à votre espace **Syntropy OS** : **« ${taskTitle} »** (priorité Haute, échéance aujourd'hui).`,
+        content: `Tâche ajoutée dans **Syntropy OS** : **« ${taskTitle} »** (priorité Haute, aujourd'hui).`,
         tier: 'fast',
         domain: 'syntropy',
         model: 'syntropy-bridge',
-        latencyMs: 18,
+        latencyMs: 16,
         executedTools: [tool],
         createdAt: nowIso,
       };
     }
 
-    // 6. Pont Syntropy OS — Lister les tâches (/tasks ou langage naturel)
     if (
       lower === '/tasks' ||
       /^(?:quelles sont |liste |affiche |montre )?mes t[aâ]ches/i.test(trimmed)
@@ -549,13 +626,12 @@ export const EvrisHub: React.FC = () => {
       const tool: EvrisExecutedTool = {
         name: 'syntropy_list_tasks',
         arguments: { status: 'pending' },
-        result: { ok: true, summary: `${pending.length} tâche(s) active(s) trouvée(s)` },
+        result: { ok: true, summary: `${pending.length} tâche(s) active(s)` },
       };
-      appendLocalLog('INFO', 'syntropy', `Outil syntropy_list_tasks exécuté (${pending.length} tâches).`);
       return {
         id: `sys-${Date.now()}`,
         role: 'assistant',
-        content: `Vous avez **${pending.length} tâche(s)** en attente dans Syntropy OS :\n\n${lines}`,
+        content: `Vous avez **${pending.length} tâche(s)** en attente :\n\n${lines}`,
         tier: 'fast',
         domain: 'syntropy',
         model: 'syntropy-bridge',
@@ -565,7 +641,6 @@ export const EvrisHub: React.FC = () => {
       };
     }
 
-    // 7. Pont Syntropy OS — Créer une note (/note ou langage naturel)
     const createNoteMatch =
       trimmed.match(/^\/note\s+(.+)$/i) ||
       trimmed.match(/^(?:crée|cree|ajoute|nouvelle)\s+(?:une\s+)?note\s*:?\s+(.+)$/i);
@@ -581,12 +656,13 @@ export const EvrisHub: React.FC = () => {
         tags: ['evris'],
         isPinned: false,
       });
+      pulseTransientState('happy', 2800);
       const tool: EvrisExecutedTool = {
         name: 'syntropy_create_note',
         arguments: { title: noteTitle },
         result: { ok: true, summary: `Note créée : "${noteTitle}"` },
       };
-      appendLocalLog('INFO', 'syntropy', `Outil syntropy_create_note exécuté : "${noteTitle}"`);
+      appendLocalLog('INFO', 'syntropy', `syntropy_create_note : "${noteTitle}"`);
       return {
         id: `sys-${Date.now()}`,
         role: 'assistant',
@@ -594,13 +670,12 @@ export const EvrisHub: React.FC = () => {
         tier: 'fast',
         domain: 'syntropy',
         model: 'syntropy-bridge',
-        latencyMs: 22,
+        latencyMs: 18,
         executedTools: [tool],
         createdAt: nowIso,
       };
     }
 
-    // 8. Pont Syntropy OS — Lister / Rechercher dans les notes
     const notesQueryMatch =
       trimmed.match(/^\/notes(?:\s+(.+))?$/i) ||
       trimmed.match(/^(?:liste|affiche|montre|cherche dans)\s+mes notes(?:\s+(.+))?$/i);
@@ -618,7 +693,7 @@ export const EvrisHub: React.FC = () => {
         matched.length === 0
           ? q
             ? `Aucune note trouvée pour « ${q} ».`
-            : 'Aucune note enregistrée pour le moment.'
+            : 'Aucune note enregistrée.'
           : matched
               .slice(0, 8)
               .map((n, i) => `${i + 1}. **${n.title}** _(${n.category})_`)
@@ -626,15 +701,14 @@ export const EvrisHub: React.FC = () => {
       const tool: EvrisExecutedTool = {
         name: 'syntropy_list_notes',
         arguments: { query: q || '*' },
-        result: { ok: true, summary: `${matched.length} note(s) trouvée(s)` },
+        result: { ok: true, summary: `${matched.length} note(s)` },
       };
-      appendLocalLog('INFO', 'syntropy', `Outil syntropy_list_notes exécuté (${matched.length} résultats).`);
       return {
         id: `sys-${Date.now()}`,
         role: 'assistant',
         content: q
           ? `**${matched.length} note(s)** correspondent à « ${q} » :\n\n${lines}`
-          : `Vos **${notes.length} note(s)** Syntropy OS (aperçu des plus récentes) :\n\n${lines}`,
+          : `Vos **${notes.length} note(s)** récentes :\n\n${lines}`,
         tier: 'fast',
         domain: 'syntropy',
         model: 'syntropy-bridge',
@@ -644,11 +718,10 @@ export const EvrisHub: React.FC = () => {
       };
     }
 
-    // 9. /memories
     if (lower === '/memories') {
       const lines =
         memories.length === 0
-          ? 'Aucune mémoire long terme enregistrée.'
+          ? 'Aucune mémoire enregistrée.'
           : memories.map((m) => `- **#${m.id}** [${m.category}] ${m.content}`).join('\n');
       return {
         id: `sys-${Date.now()}`,
@@ -657,26 +730,24 @@ export const EvrisHub: React.FC = () => {
         tier: 'fast',
         domain: 'general',
         model: 'evris-memory',
-        latencyMs: 8,
+        latencyMs: 7,
         createdAt: nowIso,
       };
     }
 
-    // 10. /status
     if (lower === '/status') {
       return {
         id: `sys-${Date.now()}`,
         role: 'assistant',
         content: [
-          `### État E.V.R.I.S. (${backendConnected ? 'Backend connecté' : 'Interface locale'})`,
-          `- **Mode actif** : \`${routingMode.toUpperCase()}\` • **Pro** : \`${proEnabled ? 'ON' : 'OFF'}\` • **Confirm** : \`${confirmRisky ? 'ON' : 'OFF'}\` • **WebSearch** : \`${webSearchEnabled ? 'ON' : 'OFF'}\``,
-          `- **CPU / RAM** : ${telemetry.cpu_percent}% CPU • ${telemetry.ram_free_gb} Go libre (seuil Pro ≥ ${ramThresholdGb.toFixed(1)} Go)`,
-          `- **Pont Syntropy OS** : ${syntropyContext.pendingTasksCount} tâches actives • ${syntropyContext.notesCount} notes • ${memories.length} mémoires`,
+          `### État E.V.R.I.S. (${backendConnected ? 'En ligne' : 'Pont local'})`,
+          `- **Mode** : \`${routingMode.toUpperCase()}\` • **CPU** : ${telemetry.cpu_percent}% • **RAM libre** : ${telemetry.ram_free_gb} Go`,
+          `- **Syntropy OS** : ${syntropyContext.pendingTasksCount} tâches actives • ${syntropyContext.notesCount} notes • ${memories.length} mémoires`,
         ].join('\n'),
         tier: 'fast',
         domain: 'general',
         model: 'evris-telemetry',
-        latencyMs: 7,
+        latencyMs: 6,
         createdAt: nowIso,
       };
     }
@@ -689,26 +760,36 @@ export const EvrisHub: React.FC = () => {
     const text = (customText ?? input).trim();
     if (!text || isSending) return;
 
+    resetSleepTimer();
+    setManualPreviewState(null);
+    setIsTyping(false);
     setInput('');
+
+    if (text.toLowerCase() === '/clear') {
+      setMessages([]);
+      appendLocalLog('INFO', 'chat', 'Conversation réinitialisée.');
+      return;
+    }
+
     const nowIso = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    const userMsg: EvrisMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: text,
-      createdAt: nowIso,
-    };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [
+      ...prev,
+      { id: `user-${Date.now()}`, role: 'user', content: text, createdAt: nowIso },
+    ]);
     setIsSending(true);
 
-    // 1. Commandes locales & Pont Syntropy OS (instantané, même hors-ligne)
+    // 1. Commandes locales
     const localReply = await tryHandleLocalCommand(text);
     if (localReply) {
       setMessages((prev) => [...prev, localReply]);
       setIsSending(false);
+      if (!localReply.executedTools?.some((t) => t.name.includes('create'))) {
+        pulseTransientState('speaking', 1600);
+      }
       return;
     }
 
-    // 2. Tentative d'envoi au backend FastAPI / WebSocket d'EVRIS
+    // 2. Backend FastAPI / WebSocket
     const assistantId = `ast-${Date.now()}`;
     const startedAt = performance.now();
     let tokenCount = 0;
@@ -729,7 +810,7 @@ export const EvrisHub: React.FC = () => {
         isStreaming: true,
       },
     ]);
-    setLiveStatusLine('Connexion au cœur E.V.R.I.S....');
+    setLiveStatusLine('Routage du noyau...');
 
     const sentOk = await sendEvrisBackendMessage(
       apiUrl,
@@ -753,34 +834,33 @@ export const EvrisHub: React.FC = () => {
           appendLocalLog('INFO', 'router', msg);
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === assistantId
-                ? { ...m, tier: tier as EvrisTier, model, content: '' }
-                : m
+              m.id === assistantId ? { ...m, tier: tier as EvrisTier, model, content: '' } : m
             )
           );
         },
         onToolStart: (name) => {
-          setLiveStatusLine(`Exécution de l'outil ${name}...`);
+          setLiveStatusLine(`Outil ${name}...`);
         },
         onToolEnd: (name, args, result) => {
           liveTools.push({ name, arguments: args, result });
           appendLocalLog(
             result?.ok ? 'INFO' : 'WARN',
             'tool',
-            `${name} → ${result?.summary || result?.error || 'terminé'}`
+            `${name} → ${result?.summary || result?.error || 'ok'}`
           );
           setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, executedTools: [...liveTools] } : m
-            )
+            prev.map((m) => (m.id === assistantId ? { ...m, executedTools: [...liveTools] } : m))
           );
         },
         onToken: (_delta, fullText) => {
-          if (firstTokenAt === null) firstTokenAt = performance.now();
+          if (firstTokenAt === null) {
+            firstTokenAt = performance.now();
+            setIsStreamingTokens(true);
+          }
           tokenCount += 1;
           const elapsedS = Math.max(0.05, (performance.now() - firstTokenAt) / 1000);
           const tps = Math.round(tokenCount / elapsedS);
-          setLiveStatusLine(`Streaming en cours (${tps} tok/s)...`);
+          setLiveStatusLine(`${tps} tok/s`);
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId
@@ -816,8 +896,10 @@ export const EvrisHub: React.FC = () => {
                 : m
             )
           );
+          pulseTransientState('speaking', 1500);
         },
         onError: (errMsg) => {
+          pulseTransientState('error', 3500);
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId
@@ -829,9 +911,9 @@ export const EvrisHub: React.FC = () => {
       }
     );
 
-    // 3. Si le serveur FastAPI n'est pas encore lancé, réponse EVRIS claire & utile
     if (!sentOk) {
       setBackendConnected(false);
+      pulseTransientState('error', 3500);
       const latencyMs = Math.round(performance.now() - startedAt);
       setMessages((prev) =>
         prev.map((m) =>
@@ -844,23 +926,24 @@ export const EvrisHub: React.FC = () => {
                 latencyMs,
                 isStreaming: false,
                 content:
-                  `Le pont serveur local **E.V.R.I.S.** (\`${apiUrl}\`) n'est pas encore démarré — l'interface Syntropy OS est prête à recevoir son flux WebSocket (\`/ws/chat\`) et REST (\`/api/status\`, \`/api/memories\`, \`/api/settings\`, \`/api/logs\`).\n\n` +
-                  `En attendant le serveur FastAPI dans \`C:\\Projets\\Evris\\backend\\app\\main.py\`, les commandes **Syntropy OS** fonctionnent déjà en direct ici :\n` +
-                  `- \`/tasks\` ou \`/task <titre>\` pour lire et créer vos tâches\n` +
-                  `- \`/notes\` ou \`/note <titre> :: <contenu>\` pour lire et créer vos notes\n` +
-                  `- \`/mode auto|fast|pro|limitless\`, \`/status\`, \`/memories\`, \`/help\``,
+                  `Le serveur local **E.V.R.I.S.** (\`${apiUrl}\`) n'est pas encore démarré.\n\n` +
+                  `En attendant, les commandes **Syntropy OS** répondent instantanément ici :\n` +
+                  `- \`/tasks\` ou \`/task <titre>\`\n` +
+                  `- \`/notes\` ou \`/note <titre> :: <contenu>\`\n` +
+                  `- \`/status\`, \`/memories\`, \`/help\``,
               }
             : m
         )
       );
-      appendLocalLog('WARN', 'bridge', `Envoi vers ${apiUrl} impossible (serveur FastAPI non démarré).`);
+      appendLocalLog('WARN', 'bridge', `Serveur FastAPI hors ligne (${apiUrl}).`);
     }
 
+    setIsStreamingTokens(false);
     setLiveStatusLine('');
     setIsSending(false);
   };
 
-  // Gestion des mémoires (UI + backend)
+  // Mémoires
   const handleAddMemory = async (e: React.FormEvent) => {
     e.preventDefault();
     const content = newMemContent.trim();
@@ -871,7 +954,8 @@ export const EvrisHub: React.FC = () => {
       if (created) {
         setMemories((prev) => [created, ...prev]);
         setNewMemContent('');
-        appendLocalLog('INFO', 'memory', `Mémoire #${created.id} enregistrée dans SQLite.`);
+        pulseTransientState('happy', 2000);
+        appendLocalLog('INFO', 'memory', `Mémoire #${created.id} enregistrée.`);
         return;
       }
     }
@@ -886,33 +970,32 @@ export const EvrisHub: React.FC = () => {
       ...prev,
     ]);
     setNewMemContent('');
-    appendLocalLog('INFO', 'memory', `Mémoire locale #${nextId} ajoutée [${category}].`);
+    pulseTransientState('happy', 2000);
+    appendLocalLog('INFO', 'memory', `Mémoire locale #${nextId} ajoutée.`);
   };
 
   const handleDeleteMemory = async (id: number | 'all') => {
-    if (backendConnected) {
-      await deleteEvrisMemory(apiUrl, id);
-    }
+    if (backendConnected) await deleteEvrisMemory(apiUrl, id);
     if (id === 'all') {
       setMemories([]);
       appendLocalLog('INFO', 'memory', 'Toutes les mémoires ont été effacées.');
     } else {
       setMemories((prev) => prev.filter((m) => m.id !== id));
-      appendLocalLog('INFO', 'memory', `Mémoire #${id} supprimée.`);
     }
   };
 
-  // Résolution d'une demande ApprovalBell
+  // Approvals
   const handleApprovalDecision = async (req: EvrisApprovalRequest, approved: boolean) => {
     setApprovals((prev) => prev.filter((a) => a.id !== req.id));
     setActiveApproval(null);
     if (!req.isDemo && backendConnected) {
       await resolveEvrisApproval(apiUrl, req.id, approved);
     }
+    pulseTransientState(approved ? 'happy' : 'error', 2600);
     appendLocalLog(
       approved ? 'INFO' : 'WARN',
       'security',
-      `ApprovalBell : ${req.tool}(${req.target}) ${approved ? 'AUTORISÉ [Y]' : 'REFUSÉ [N]'}.`
+      `${req.tool}(${req.target}) ${approved ? 'AUTORISÉ' : 'REFUSÉ'}.`
     );
     setMessages((prev) => [
       ...prev,
@@ -920,12 +1003,12 @@ export const EvrisHub: React.FC = () => {
         id: `appr-res-${Date.now()}`,
         role: 'assistant',
         content: approved
-          ? `Action **${req.tool}** (\`${req.target}\`) autorisée par l'utilisateur.`
+          ? `Action **${req.tool}** (\`${req.target}\`) autorisée.`
           : `Action **${req.tool}** (\`${req.target}\`) refusée par sécurité.`,
         tier: approved ? 'fast' : 'refused',
         domain: 'general',
         model: 'approval-guard',
-        latencyMs: 12,
+        latencyMs: 10,
         createdAt: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
@@ -944,1087 +1027,908 @@ export const EvrisHub: React.FC = () => {
     setActiveApproval(demo);
   };
 
-  const tierBadgeClass = (tier?: EvrisTier) => {
-    if (tier === 'pro') return 'bg-amber-500/15 text-amber-400 border-amber-500/35';
-    if (tier === 'limitless') return 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/35';
-    if (tier === 'refused') return 'bg-rose-500/15 text-rose-400 border-rose-500/35';
-    return 'bg-cyan-500/15 text-cyan-400 border-cyan-500/35';
-  };
-
   const activeModelChip =
     MODE_OPTIONS.find((m) => m.id === routingMode)?.modelHint || 'qwen3.5:4b / 9b';
-
-  const filteredTools =
-    toolFilter === 'all'
-      ? EVRIS_TOOL_CATALOG
-      : EVRIS_TOOL_CATALOG.filter((t) => t.category === toolFilter);
-
   const filteredLogs =
     logLevelFilter === 'ALL' ? logs : logs.filter((l) => l.level === logLevelFilter);
 
-  const cardBg = isNothing
-    ? 'bg-[#0a0a0c] border-white/15'
+  const surfacePanel = isNothing
+    ? 'bg-[#09090b] border-white/15'
     : isCyberpunk
-    ? 'bg-[#0b1020]/90 border-[#FCEE0A]/25'
+    ? 'bg-[#0a1020]/90 border-[#FCEE0A]/25'
     : isDark
-    ? 'glass-card bg-zinc-900/60 border-zinc-800/80'
-    : 'bg-white border-zinc-200 shadow-xs';
+    ? 'bg-zinc-900/55 border-zinc-800/80 backdrop-blur-xl'
+    : 'bg-white/85 border-zinc-200 shadow-xs backdrop-blur-xl';
 
   return (
-    <div className="flex flex-col flex-1 h-full min-h-0 w-full overflow-hidden">
-      {/* Top 3px SystemPulse Bar (inspiré hud-mockup.html, adapté aux thèmes Syntropy) */}
-      <div
-        className="h-[3px] w-full flex-shrink-0"
-        style={{
-          background: isNothing
-            ? 'linear-gradient(90deg, #D71920 0%, #ffffff 50%, #D71920 100%)'
-            : isCyberpunk
-            ? 'linear-gradient(90deg, #FCEE0A 0%, #00F0FF 100%)'
-            : 'linear-gradient(90deg, #22d3ee 0%, #fbbf24 50%, #a855f7 100%)',
-        }}
-      />
-
-      {/* TOPBAR PRINCIPALE */}
+    <div
+      className="relative flex flex-col flex-1 h-full min-h-0 w-full overflow-hidden"
+      onMouseDown={resetSleepTimer}
+    >
+      {/* BARRE SUPÉRIEURE ÉPURÉE (1 seule ligne, zéro surcharge) */}
       <header
-        className={`flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3 border-b flex-shrink-0 ${
-          isDark ? 'border-zinc-800/80 bg-zinc-950/60' : 'border-zinc-200 bg-white/80'
+        className={`flex items-center justify-between gap-3 px-4 sm:px-6 h-14 border-b flex-shrink-0 ${
+          isDark ? 'border-zinc-800/70 bg-zinc-950/60' : 'border-zinc-200/80 bg-white/80'
         } backdrop-blur-xl`}
       >
-        {/* Identité E.V.R.I.S. + État de connexion */}
+        {/* Identité + État temps réel du noyau */}
         <div className="flex items-center gap-3 min-w-0">
           <div
-            className={`w-9 h-9 rounded-xl flex items-center justify-center border flex-shrink-0 ${
-              isNothing
-                ? 'bg-zinc-900 border-white/20 text-white'
-                : isCyberpunk
-                ? 'bg-[#FCEE0A]/15 border-[#FCEE0A]/50 text-[#FCEE0A]'
-                : 'bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-indigo-500/20 border-cyan-500/30 text-cyan-400'
-            }`}
-          >
-            <Bot className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1
-                className={`text-sm sm:text-base font-black tracking-widest uppercase ${
-                  isNothing ? 'font-ndot' : isCyberpunk ? 'font-mono text-[#FCEE0A]' : ''
-                }`}
-              >
-                E.V.R.I.S.
-              </h1>
-              <span
-                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border ${
-                  backendConnected
-                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                    : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    backendConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
-                  }`}
-                />
-                {backendConnected ? 'LOCAL ONLINE' : 'UI LOCALE'}
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-500 truncate hidden sm:block">
-              Qwen 3.5 Multi-Model Router • Pont Syntropy OS actif ({syntropyContext.pendingTasksCount} tâches, {syntropyContext.notesCount} notes)
-            </p>
-          </div>
-        </div>
-
-        {/* Sélecteur des 4 Modes (AUTO / FAST / PRO / LIMITLESS) */}
-        <div
-          className={`inline-flex items-center p-1 rounded-xl border gap-1 ${
-            isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
-          }`}
-        >
-          {MODE_OPTIONS.map((m) => {
-            const active = routingMode === m.id;
-            const activeColors =
-              m.id === 'pro'
-                ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                : m.id === 'limitless'
-                ? 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/40'
-                : 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40';
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => applyMode(m.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold border transition-all cursor-pointer ${
-                  active
-                    ? activeColors
-                    : 'border-transparent text-zinc-500 hover:text-zinc-200'
-                }`}
-              >
-                {m.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Contrôles Droite : Contexte Syntropy + ApprovalBell + Modèle actif */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setInjectSyntropyContext((v) => !v)}
-            className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
-              injectSyntropyContext
-                ? 'bg-purple-500/15 border-purple-500/35 text-purple-300'
-                : isDark
-                ? 'bg-zinc-900 border-zinc-800 text-zinc-500'
-                : 'bg-zinc-100 border-zinc-200 text-zinc-500'
-            }`}
-            title="Injecter le contexte en direct de Syntropy OS (tâches, notes, projets) dans les requêtes EVRIS"
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span className="hidden xl:inline">Contexte Syntropy</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (approvals.length > 0) setActiveApproval(approvals[0]);
-              else triggerDemoApproval();
+            className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-all duration-300"
+            style={{
+              backgroundColor: coreMeta.color,
+              boxShadow: `0 0 10px ${coreMeta.color}`,
             }}
-            className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
-              approvals.length > 0
-                ? 'bg-amber-500/20 border-amber-500/45 text-amber-300 animate-pulse'
-                : isDark
-                ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                : 'bg-zinc-100 border-zinc-200 text-zinc-600'
-            }`}
-            title="ApprovalBell — Confirmations de sécurité pour actions PC sensibles"
-          >
-            <Bell className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">ApprovalBell</span>
-            {approvals.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[10px] font-bold">
-                {approvals.length}
-              </span>
-            )}
-          </button>
-
+          />
           <span
-            className={`hidden lg:inline-flex items-center px-2.5 py-1.5 rounded-xl text-[11px] font-mono border ${
-              isDark
-                ? 'bg-zinc-900/70 border-zinc-800 text-zinc-400'
-                : 'bg-zinc-100 border-zinc-200 text-zinc-600'
+            className={`text-sm font-black tracking-[0.2em] uppercase ${
+              isNothing ? 'font-ndot' : isCyberpunk ? 'font-mono text-[#FCEE0A]' : ''
             }`}
           >
-            {activeModelChip}
+            E.V.R.I.S.
           </span>
+          <span
+            className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+              isDark
+                ? 'bg-zinc-900/80 border-zinc-800 text-zinc-300'
+                : 'bg-zinc-100 border-zinc-200 text-zinc-700'
+            }`}
+          >
+            <span style={{ color: coreMeta.color }}>{coreMeta.icon}</span>
+            <span>{coreMeta.name}</span>
+          </span>
+          <span
+            className={`hidden md:inline-flex items-center gap-1 text-[10px] font-mono ${
+              backendConnected ? 'text-emerald-400' : 'text-zinc-500'
+            }`}
+          >
+            {backendConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+            {backendConnected ? 'ONLINE' : 'LOCAL'}
+          </span>
+        </div>
+
+        {/* Contrôles discrets à droite */}
+        <div className="flex items-center gap-2">
+          {/* Sélecteur compact des 4 modes */}
+          <div
+            className={`hidden sm:inline-flex items-center p-0.5 rounded-xl border gap-0.5 ${
+              isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
+            }`}
+          >
+            {MODE_OPTIONS.map((m) => {
+              const active = routingMode === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => applyMode(m.id)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                    active
+                      ? isNothing
+                        ? 'bg-white text-black'
+                        : isCyberpunk
+                        ? 'bg-[#FCEE0A] text-black'
+                        : 'bg-purple-600 text-white shadow-xs'
+                      : 'text-zinc-500 hover:text-zinc-200'
+                  }`}
+                  title={m.modelHint}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Alerte ApprovalBell (discrète sauf si alerte active) */}
+          {approvals.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setActiveApproval(approvals[0])}
+              className="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border bg-amber-500/20 border-amber-500/45 text-amber-300 animate-pulse flex items-center gap-1.5 cursor-pointer"
+            >
+              <Bell className="w-3.5 h-3.5" />
+              <span>{approvals.length}</span>
+            </button>
+          )}
+
+          {/* Nouvelle conversation */}
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setMessages([]);
+                resetSleepTimer();
+              }}
+              className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                isDark
+                  ? 'bg-zinc-900/70 border-zinc-800 text-zinc-400 hover:text-zinc-100'
+                  : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900'
+              }`}
+              title="Nouvelle conversation"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Bouton Panneau Système (Tiroir latéral) */}
+          <button
+            type="button"
+            onClick={() => setDrawerOpen((v) => !v)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
+              drawerOpen
+                ? isNothing
+                  ? 'bg-white text-black border-white'
+                  : 'bg-purple-600 text-white border-purple-600'
+                : isDark
+                ? 'bg-zinc-900/70 border-zinc-800 text-zinc-300 hover:text-white'
+                : 'bg-white border-zinc-200 text-zinc-700 hover:text-zinc-950'
+            }`}
+            title="Noyau ARC, Télémétrie, Mémoires, Logs & Connexion"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Système</span>
+          </button>
         </div>
       </header>
 
-      {/* SOUS-NAVIGATION 5 ONGLETS */}
-      <nav
-        className={`flex items-center justify-between gap-2 px-4 sm:px-6 py-2 border-b flex-shrink-0 overflow-x-auto scrollbar-none ${
-          isDark ? 'border-zinc-800/60 bg-zinc-950/30' : 'border-zinc-200/80 bg-zinc-50/70'
-        }`}
-      >
-        <div className="flex items-center gap-1.5">
-          {(
-            [
-              { id: 'chat' as EvrisTab, label: 'Chat Live', icon: MessageSquare },
-              { id: 'telemetry' as EvrisTab, label: 'Télémétrie & Modèles', icon: Activity },
-              { id: 'memories' as EvrisTab, label: `Mémoires (${memories.length}) & Outils`, icon: Brain },
-              { id: 'logs' as EvrisTab, label: 'Logs (evris.log)', icon: Terminal },
-              { id: 'settings' as EvrisTab, label: 'Configuration', icon: Sliders },
-            ] as const
-          ).map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
-                  active
-                    ? isNothing
-                      ? 'bg-white text-black'
-                      : isCyberpunk
-                      ? 'bg-[#FCEE0A] text-black font-bold'
-                      : 'bg-purple-600 text-white shadow-sm shadow-purple-600/25'
-                    : isDark
-                    ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/80'
-                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => syncBackend(apiUrl, false)}
-          disabled={isCheckingBackend}
-          className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border flex items-center gap-1.5 transition-all cursor-pointer flex-shrink-0 ${
-            isDark
-              ? 'bg-zinc-900/70 border-zinc-800 text-zinc-400 hover:text-zinc-200'
-              : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900'
-          }`}
-          title="Vérifier la connexion au serveur local EVRIS"
-        >
-          <RefreshCw className={`w-3 h-3 ${isCheckingBackend ? 'animate-spin text-cyan-400' : ''}`} />
-          <span className="hidden sm:inline">{backendConnected ? 'Synchronisé' : 'Reconnecter'}</span>
-        </button>
-      </nav>
-
-      {/* ===================================================================== */}
-      {/* VUE 1 : CHAT LIVE + PONT SYNTROPY OS                                  */}
-      {/* ===================================================================== */}
-      {activeTab === 'chat' && (
-        <div className="flex-1 flex flex-col min-h-0">
-          <div
-            className={`flex-1 overflow-y-auto px-4 sm:px-6 py-5 ${
-              messages.length === 0 ? 'flex flex-col justify-center' : 'space-y-4'
+      {/* CORPS PRINCIPAL : PRÉSENCE + CONVERSATION */}
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        {/* Colonne de Présence continue (visible sur desktop dès qu'une conversation est active) */}
+        {messages.length > 0 && (
+          <aside
+            className={`hidden lg:flex flex-col items-center justify-between w-64 flex-shrink-0 p-5 border-r ${
+              isDark ? 'border-zinc-800/70 bg-zinc-950/35' : 'border-zinc-200/80 bg-zinc-50/60'
             }`}
           >
-            <div className="max-w-4xl w-full mx-auto space-y-4">
-              {messages.length === 0 ? (
-                <div className={`p-6 sm:p-8 rounded-3xl border text-center space-y-5 ${cardBg}`}>
-                  <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-amber-500/20 border border-cyan-500/30 flex items-center justify-center">
-                    <Sparkles className="w-7 h-7 text-cyan-400" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <h2 className={`text-lg font-extrabold ${isNothing ? 'font-ndot tracking-wider' : ''}`}>
-                      E.V.R.I.S. — Intelligence Locale & Pont Syntropy OS
-                    </h2>
-                    <p className="text-xs sm:text-sm text-zinc-400 max-w-xl mx-auto">
-                      Routage 3 niveaux (<span className="text-cyan-400 font-mono">FAST 4B</span> •{' '}
-                      <span className="text-amber-400 font-mono">PRO 9B</span> •{' '}
-                      <span className="text-fuchsia-400 font-mono">LIMITLESS</span>), 10 outils PC autonomes et accès direct à vos tâches &amp; notes Syntropy OS.
-                    </p>
-                  </div>
+            <div className="w-full flex flex-col items-center text-center space-y-4">
+              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+                Noyau ARC · 25×25
+              </div>
 
-                  {/* Raccourcis rapides */}
-                  <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                    {QUICK_PROMPTS.map((qp) => (
-                      <button
-                        key={qp.label}
-                        type="button"
-                        onClick={() => handleSend(qp.prompt)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${
-                          isDark
-                            ? 'bg-zinc-950/70 hover:bg-zinc-800/80 border-zinc-800 text-zinc-200'
-                            : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-800'
-                        }`}
-                      >
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400">
-                          {qp.badge}
-                        </span>
-                        <span>{qp.label}</span>
-                      </button>
-                    ))}
-                  </div>
+              <EvrisArcCore
+                state={effectiveCoreState}
+                size={164}
+                brightness={arcBrightness}
+                framed
+              />
+
+              <div className="space-y-1 px-1">
+                <div className="text-sm font-bold flex items-center justify-center gap-1.5">
+                  <span style={{ color: coreMeta.color }}>{coreMeta.icon}</span>
+                  <span>{coreMeta.title}</span>
                 </div>
-              ) : (
-                messages.map((msg) => {
+                <p className="text-[11px] text-zinc-500 leading-relaxed">
+                  {liveStatusLine || coreMeta.detail}
+                </p>
+              </div>
+            </div>
+
+            {/* Indicateurs compacts en bas de la colonne présence */}
+            <div className="w-full space-y-2.5 pt-4 border-t border-zinc-800/40">
+              <button
+                type="button"
+                onClick={() => setInjectSyntropyContext((v) => !v)}
+                className={`w-full px-3 py-2 rounded-xl border text-[11px] font-medium flex items-center justify-between transition-all cursor-pointer ${
+                  injectSyntropyContext
+                    ? isDark
+                      ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                      : 'bg-cyan-50 border-cyan-300 text-cyan-700'
+                    : isDark
+                    ? 'bg-zinc-900/50 border-zinc-800 text-zinc-500'
+                    : 'bg-zinc-100 border-zinc-200 text-zinc-500'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5" />
+                  Pont Syntropy
+                </span>
+                <span className="font-mono text-[10px]">
+                  {injectSyntropyContext ? 'ON' : 'OFF'}
+                </span>
+              </button>
+
+              <div
+                className={`px-3 py-2 rounded-xl border text-[10px] font-mono space-y-1 ${
+                  isDark
+                    ? 'bg-zinc-900/40 border-zinc-800/70 text-zinc-400'
+                    : 'bg-white border-zinc-200 text-zinc-600'
+                }`}
+              >
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Modèle</span>
+                  <span className="truncate max-w-[125px]">{activeModelChip}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Contexte</span>
+                  <span>
+                    {syntropyContext.pendingTasksCount}T · {syntropyContext.notesCount}N
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Mémoires</span>
+                  <span>{memories.length}</span>
+                </div>
+              </div>
+            </div>
+          </aside>
+        )}
+
+        {/* Zone principale (Écran d'accueil centré OU fil de discussion + compositeur) */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+          {/* Mini bandeau ARC sur mobile/tablette quand la conversation est active */}
+          {messages.length > 0 && (
+            <div
+              className={`flex lg:hidden items-center gap-3 px-4 py-2 border-b flex-shrink-0 ${
+                isDark ? 'border-zinc-800/60 bg-zinc-950/40' : 'border-zinc-200 bg-zinc-50/70'
+              }`}
+            >
+              <EvrisArcCore
+                state={effectiveCoreState}
+                size={42}
+                brightness={arcBrightness}
+                framed
+              />
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-bold truncate">{coreMeta.title}</div>
+                <div className="text-[11px] text-zinc-500 truncate">
+                  {liveStatusLine || coreMeta.detail}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Flux scrollable */}
+          <div
+            className={`flex-1 overflow-y-auto px-4 sm:px-8 ${
+              messages.length === 0
+                ? 'flex flex-col items-center justify-center py-6'
+                : 'py-6 space-y-5'
+            }`}
+          >
+            {messages.length === 0 ? (
+              /* ÉCRAN D'ACCUEIL — CENTRÉ SUR LE NOYAU ARC 25×25 */
+              <div className="w-full max-w-2xl mx-auto flex flex-col items-center text-center space-y-6">
+                <EvrisArcCore
+                  state={effectiveCoreState}
+                  size={196}
+                  brightness={arcBrightness}
+                  framed
+                />
+
+                <div className="space-y-1.5">
+                  <h2
+                    className={`text-xl sm:text-2xl font-bold tracking-tight ${
+                      isNothing ? 'font-ndot tracking-wider' : ''
+                    }`}
+                  >
+                    {coreMeta.title}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto">
+                    {coreMeta.detail}
+                  </p>
+                </div>
+
+                {/* 4 suggestions rapides minimalistes */}
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                  {QUICK_PROMPTS.map((q) => (
+                    <button
+                      key={q.label}
+                      type="button"
+                      onClick={() => handleSend(q.prompt)}
+                      className={`px-3.5 py-2 rounded-full text-xs font-medium border transition-all cursor-pointer ${
+                        isDark
+                          ? 'bg-zinc-900/60 border-zinc-800 text-zinc-300 hover:border-cyan-500/45 hover:text-white'
+                          : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:text-zinc-950'
+                      }`}
+                    >
+                      {q.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* FIL DE CONVERSATION ÉPURÉ */
+              <div className="max-w-3xl w-full mx-auto space-y-5">
+                {messages.map((msg) => {
                   const isUser = msg.role === 'user';
                   return (
                     <div
                       key={msg.id}
-                      className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                      className={`group flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                     >
+                      {/* Outils exécutés (badges discrets au-dessus de la réponse) */}
+                      {!isUser && msg.executedTools && msg.executedTools.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-1.5">
+                          {msg.executedTools.map((t, i) => (
+                            <span
+                              key={`${msg.id}-tool-${i}`}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono border ${
+                                isDark
+                                  ? 'bg-cyan-500/10 border-cyan-500/25 text-cyan-300'
+                                  : 'bg-cyan-50 border-cyan-200 text-cyan-700'
+                              }`}
+                            >
+                              <Zap className="w-2.5 h-2.5" />
+                              {t.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Bulle de message */}
                       <div
-                        className={`max-w-[88%] sm:max-w-[80%] rounded-2xl px-4 py-3 border transition-all ${
+                        className={`max-w-[88%] sm:max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words ${
                           isUser
                             ? isNothing
-                              ? 'bg-white text-black border-white font-medium'
+                              ? 'bg-white text-black font-medium'
                               : isCyberpunk
-                              ? 'bg-[#FCEE0A] text-black border-[#FCEE0A] font-semibold'
-                              : 'bg-purple-600 text-white border-purple-500/40 shadow-md shadow-purple-900/20'
-                            : `${cardBg}`
+                              ? 'bg-[#FCEE0A] text-black font-semibold'
+                              : 'bg-purple-600 text-white'
+                            : `${surfacePanel} border`
                         }`}
                       >
-                        {/* Traces d'outils exécutés */}
-                        {!isUser && msg.executedTools && msg.executedTools.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mb-2.5">
-                            {msg.executedTools.map((tool, i) => (
-                              <span
-                                key={`${tool.name}-${i}`}
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono border ${
-                                  tool.result?.ok !== false
-                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                    : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                                }`}
-                                title={tool.result?.summary || tool.result?.error}
-                              >
-                                <Zap className="w-2.5 h-2.5" />
-                                <span>{tool.name}</span>
-                              </span>
-                            ))}
-                          </div>
+                        {msg.content || (
+                          <span className="inline-flex items-center gap-2 text-xs text-zinc-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                            {liveStatusLine || 'Réflexion en cours...'}
+                          </span>
                         )}
+                      </div>
 
-                        {/* Contenu du message */}
-                        <div className="text-xs sm:text-[13.5px] leading-relaxed whitespace-pre-wrap break-words">
-                          {msg.content || (msg.isStreaming ? '...' : '')}
-                        </div>
-
-                        {/* Métadonnées + Actions rapides Syntropy sur les réponses assistant */}
-                        {!isUser && (
-                          <div className="mt-2.5 pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono text-zinc-500">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {msg.tier && (
-                                <span
-                                  className={`px-1.5 py-0.5 rounded border font-bold uppercase ${tierBadgeClass(
-                                    msg.tier
-                                  )}`}
-                                >
-                                  {msg.tier}
-                                  {msg.domain ? ` • ${msg.domain.toUpperCase()}` : ''}
-                                </span>
+                      {/* Métadonnées & actions au survol */}
+                      <div className="flex items-center gap-2 mt-1 px-1 text-[10px] text-zinc-500">
+                        <span>{msg.createdAt}</span>
+                        {!isUser && msg.model && (
+                          <>
+                            <span>·</span>
+                            <span className="font-mono">{msg.model}</span>
+                          </>
+                        )}
+                        {!isUser && typeof msg.latencyMs === 'number' && (
+                          <span>({msg.latencyMs} ms)</span>
+                        )}
+                        {!isUser && !msg.isStreaming && msg.content && (
+                          <div className="inline-flex items-center gap-1 ml-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => handleCopyMessage(msg)}
+                              className="p-1 rounded hover:bg-zinc-800/40 cursor-pointer"
+                              title="Copier"
+                            >
+                              {copiedId === msg.id ? (
+                                <Check className="w-3 h-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
                               )}
-                              {msg.model && <span>{msg.model}</span>}
-                              {typeof msg.latencyMs === 'number' && <span>• {msg.latencyMs} ms</span>}
-                              {typeof msg.tokensPerSec === 'number' && msg.tokensPerSec > 0 && (
-                                <span>• {msg.tokensPerSec} tok/s</span>
-                              )}
-                            </div>
-
-                            {!msg.isStreaming && msg.content && (
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleSaveReplyToNote(msg)}
-                                  className="px-2 py-0.5 rounded-md bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
-                                  title="Enregistrer cette réponse dans les Notes Syntropy OS"
-                                >
-                                  {savedMsgFeedback === `note:${msg.id}` ? (
-                                    <Check className="w-3 h-3 text-emerald-400" />
-                                  ) : (
-                                    <FileText className="w-3 h-3" />
-                                  )}
-                                  <span>→ Note</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleSaveReplyToTask(msg)}
-                                  className="px-2 py-0.5 rounded-md bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
-                                  title="Créer une tâche Syntropy OS à partir de cette réponse"
-                                >
-                                  {savedMsgFeedback === `task:${msg.id}` ? (
-                                    <Check className="w-3 h-3 text-emerald-400" />
-                                  ) : (
-                                    <CheckSquare className="w-3 h-3" />
-                                  )}
-                                  <span>→ Tâche</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopyMessage(msg)}
-                                  className="p-1 rounded-md bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                                  title="Copier"
-                                >
-                                  {copiedId === msg.id ? (
-                                    <Check className="w-3 h-3 text-emerald-400" />
-                                  ) : (
-                                    <Copy className="w-3 h-3" />
-                                  )}
-                                </button>
-                              </div>
-                            )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveReplyToNote(msg)}
+                              className="px-1.5 py-0.5 rounded hover:bg-zinc-800/40 inline-flex items-center gap-1 cursor-pointer"
+                              title="Enregistrer en Note Syntropy OS"
+                            >
+                              <FileText className="w-3 h-3" />
+                              <span>{savedMsgFeedback === `note:${msg.id}` ? 'Note OK' : 'Note'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveReplyToTask(msg)}
+                              className="px-1.5 py-0.5 rounded hover:bg-zinc-800/40 inline-flex items-center gap-1 cursor-pointer"
+                              title="Créer une Tâche Syntropy OS"
+                            >
+                              <CheckSquare className="w-3 h-3" />
+                              <span>{savedMsgFeedback === `task:${msg.id}` ? 'Tâche OK' : 'Tâche'}</span>
+                            </button>
                           </div>
                         )}
                       </div>
                     </div>
                   );
-                })
-              )}
-
-              {liveStatusLine && (
-                <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 px-2">
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>{liveStatusLine}</span>
-                </div>
-              )}
-
-              <div ref={chatEndRef} />
-            </div>
+                })}
+                <div ref={chatEndRef} />
+              </div>
+            )}
           </div>
 
-          {/* Barre de saisie (Composer) */}
-          <div
-            className={`px-4 sm:px-6 py-3 border-t flex-shrink-0 ${
-              isDark ? 'border-zinc-800/80 bg-zinc-950/60' : 'border-zinc-200 bg-white/80'
-            } backdrop-blur-xl`}
-          >
-            <div className="max-w-4xl mx-auto">
+          {/* COMPOSITEUR FLOTTANT EN BAS */}
+          <div className="px-4 sm:px-8 pb-4 pt-2 flex-shrink-0">
+            <div className="max-w-3xl mx-auto">
               <div
-                className={`flex items-end gap-2 p-2 rounded-2xl border transition-all ${
+                className={`flex items-end gap-2 p-2 pl-4 rounded-2xl border transition-all ${
                   isDark
-                    ? 'bg-zinc-900/90 border-zinc-800 focus-within:border-purple-500/50'
-                    : 'bg-zinc-50 border-zinc-300 focus-within:border-purple-500'
+                    ? 'bg-zinc-900/80 border-zinc-800 focus-within:border-cyan-500/50'
+                    : 'bg-white border-zinc-200 shadow-sm focus-within:border-zinc-400'
                 }`}
               >
                 <textarea
                   ref={textareaRef}
                   rows={1}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => handleInputChange(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       handleSend();
                     }
                   }}
-                  placeholder="Message à E.V.R.I.S. ou commande (/tasks, /task, /notes, /mode, /help)..."
-                  className="flex-1 bg-transparent px-2.5 py-1.5 text-xs sm:text-sm leading-normal outline-none resize-none max-h-36 placeholder:text-zinc-500"
+                  placeholder="Parlez à E.V.R.I.S. ou tapez /tasks, /notes, /help..."
+                  className="flex-1 bg-transparent resize-none outline-none text-sm py-2 max-h-36 placeholder:text-zinc-500"
                 />
-                {messages.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setMessages([])}
-                    className="p-2 rounded-xl text-zinc-500 hover:text-rose-400 hover:bg-white/5 transition-colors cursor-pointer"
-                    title="Vider la conversation (/clear)"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
+
                 <button
                   type="button"
-                  disabled={!input.trim() || isSending}
                   onClick={() => handleSend()}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer ${
+                  disabled={!input.trim() || isSending}
+                  className={`h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed ${
                     isNothing
-                      ? 'bg-white text-black hover:bg-zinc-200'
+                      ? 'bg-white text-black'
                       : isCyberpunk
-                      ? 'bg-[#FCEE0A] text-black hover:brightness-110'
-                      : 'bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-600/25'
+                      ? 'bg-[#FCEE0A] text-black'
+                      : 'bg-purple-600 text-white hover:bg-purple-500'
                   }`}
+                  title="Envoyer (Entrée)"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Envoyer</span>
+                  <Send className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono mt-1.5 px-1">
-                <span>Entrée pour envoyer • Maj+Entrée nouvelle ligne • Tapez /help pour toutes les commandes</span>
-                <span>Pont Syntropy OS : {injectSyntropyContext ? 'ACTIF' : 'INACTIF'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===================================================================== */}
-      {/* VUE 2 : TÉLÉMÉTRIE & MODÈLES QWEN 3.5                                 */}
-      {/* ===================================================================== */}
-      {activeTab === 'telemetry' && (
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="max-w-5xl mx-auto space-y-5">
-            {/* Cartes des 3 Tiers */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* FAST */}
-              <div className={`p-5 rounded-2xl border space-y-2.5 ${cardBg}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-bold">
-                    FAST Tier
-                  </span>
-                  <span
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                      modelsStatus.fast.ready
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                        : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                    }`}
-                  >
-                    {modelsStatus.fast.loaded ? 'LOADED' : modelsStatus.fast.ready ? 'READY' : 'STANDBY'}
-                  </span>
-                </div>
-                <div className="text-base font-bold font-mono text-cyan-300">{modelsStatus.fast.model}</div>
-                <p className="text-xs text-zinc-400">
-                  ~3.3 Go VRAM • `keep_alive: 30m` • `think: false`. Réponses instantanées &amp; commandes PC rapides.
-                </p>
-              </div>
-
-              {/* PRO */}
-              <div className={`p-5 rounded-2xl border space-y-2.5 ${cardBg}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold">
-                    PRO Tier
-                  </span>
-                  <span
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                      modelsStatus.pro.ready
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                        : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                    }`}
-                  >
-                    {modelsStatus.pro.loaded ? 'LOADED' : modelsStatus.pro.ready ? 'RAM OK' : 'STANDBY'}
-                  </span>
-                </div>
-                <div className="text-base font-bold font-mono text-amber-300">{modelsStatus.pro.model}</div>
-                <p className="text-xs text-zinc-400">
-                  ~6.6 Go VRAM • `keep_alive: 5m`. Finance, Science, Tech, Stratégie &amp; code complexe.
-                </p>
-              </div>
-
-              {/* LIMITLESS */}
-              <div className={`p-5 rounded-2xl border space-y-2.5 ${cardBg}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-fuchsia-400 font-bold">
-                    LIMITLESS Tier
-                  </span>
-                  <span
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                      modelsStatus.limitless.ready
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                        : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                    }`}
-                  >
-                    {modelsStatus.limitless.loaded
-                      ? 'LOADED'
-                      : modelsStatus.limitless.ready
-                      ? 'RAM OK'
-                      : 'STANDBY'}
-                  </span>
-                </div>
-                <div className="text-sm font-bold font-mono text-fuchsia-300 truncate">
-                  {modelsStatus.limitless.model}
-                </div>
-                <p className="text-xs text-zinc-400">
-                  ~6.6 Go VRAM • Modèle abliterated sans refus, auto-escalade transparente en mode `AUTO`.
-                </p>
-              </div>
-            </div>
-
-            {/* Garde-fou RAM & Télémétrie Workstation */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className={`p-5 rounded-2xl border space-y-4 ${cardBg}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Cpu className="w-4 h-4 text-cyan-400" />
-                    <span className="text-sm font-bold">Télémétrie Workstation</span>
-                  </div>
-                  <span className="text-[11px] font-mono text-zinc-500">
-                    {telemetry.hostname} • {telemetry.os}
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-zinc-400">Charge CPU</span>
-                      <span className="font-mono font-bold">{telemetry.cpu_percent} %</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-cyan-500 transition-all duration-500"
-                        style={{ width: `${Math.min(100, telemetry.cpu_percent)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-zinc-400">Mémoire RAM utilisée</span>
-                      <span className="font-mono font-bold">
-                        {telemetry.ram_used_gb} / {telemetry.ram_total_gb} Go ({telemetry.ram_free_gb} Go libre)
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-purple-500 transition-all duration-500"
-                        style={{ width: `${Math.min(100, telemetry.ram_percent)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 text-xs text-zinc-400 flex items-center justify-between">
-                  <span>Garde-fou 9B (seuil ≥ {ramThresholdGb.toFixed(1)} Go libre)</span>
-                  <span
-                    className={`font-mono font-bold ${
-                      telemetry.ram_free_gb >= ramThresholdGb ? 'text-emerald-400' : 'text-rose-400'
-                    }`}
-                  >
-                    {telemetry.ram_free_gb >= ramThresholdGb ? 'AUTORISÉ' : 'BLOQUÉ'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Pont de données Syntropy OS */}
-              <div className={`p-5 rounded-2xl border space-y-4 ${cardBg}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <HardDrive className="w-4 h-4 text-purple-400" />
-                    <span className="text-sm font-bold">Pont Temps Réel Syntropy OS</span>
-                  </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                    {injectSyntropyContext ? 'SYNCHRONISÉ' : 'EN PAUSE'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                    <div className="text-[10px] font-mono text-zinc-500 uppercase">Tâches actives</div>
-                    <div className="text-xl font-black mt-0.5">{syntropyContext.pendingTasksCount}</div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                    <div className="text-[10px] font-mono text-zinc-500 uppercase">Notes Markdown</div>
-                    <div className="text-xl font-black mt-0.5">{syntropyContext.notesCount}</div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                    <div className="text-[10px] font-mono text-zinc-500 uppercase">Projets PARA</div>
-                    <div className="text-xl font-black mt-0.5">{syntropyContext.projectsCount}</div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                    <div className="text-[10px] font-mono text-zinc-500 uppercase">Série Habitudes</div>
-                    <div className="text-xl font-black mt-0.5">{syntropyContext.currentStreak} j</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===================================================================== */}
-      {/* VUE 3 : MÉMOIRES SQLITE & 14 OUTILS AUTONOMES                         */}
-      {/* ===================================================================== */}
-      {activeTab === 'memories' && (
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="max-w-5xl mx-auto space-y-6">
-            {/* Section Mémoires long terme */}
-            <div className={`p-5 rounded-2xl border space-y-4 ${cardBg}`}>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-sm font-bold flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-purple-400" />
-                    <span>Mémoires Long Terme ({memories.length})</span>
-                  </h2>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    Synchronisées avec `evris_memory.db` dès que le serveur FastAPI est connecté.
-                  </p>
-                </div>
-                {memories.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMemory('all')}
-                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 cursor-pointer"
-                  >
-                    Tout effacer (/forget all)
-                  </button>
-                )}
-              </div>
-
-              <form onSubmit={handleAddMemory} className="flex flex-col sm:flex-row gap-2">
-                <select
-                  value={newMemCategory}
-                  onChange={(e) => setNewMemCategory(e.target.value)}
-                  className={`px-3 py-2 rounded-xl text-xs border outline-none ${
-                    isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-200' : 'bg-white border-zinc-300'
-                  }`}
-                >
-                  <option value="preference">preference</option>
-                  <option value="project">project</option>
-                  <option value="finance">finance</option>
-                  <option value="hardware">hardware</option>
-                  <option value="personal">personal</option>
-                </select>
-                <input
-                  type="text"
-                  value={newMemContent}
-                  onChange={(e) => setNewMemContent(e.target.value)}
-                  placeholder="Ajouter un fait permanent à retenir..."
-                  className={`flex-1 px-3 py-2 rounded-xl text-xs border outline-none ${
-                    isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-300'
-                  }`}
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Mémoriser</span>
-                </button>
-              </form>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                {memories.map((m) => (
-                  <div
-                    key={m.id}
-                    className="p-3 rounded-xl bg-white/[0.03] border border-white/10 flex items-start justify-between gap-2"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500">
-                        <span className="text-amber-400 font-bold">#{m.id}</span>
-                        <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400">
-                          {m.category}
-                        </span>
-                        <span>{m.created_at}</span>
-                      </div>
-                      <p className="text-xs text-zinc-200 mt-1">{m.content}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteMemory(m.id)}
-                      className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-white/5 cursor-pointer"
-                      title={`Supprimer #${m.id}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Catalogue des 14 Outils */}
-            <div className={`p-5 rounded-2xl border space-y-4 ${cardBg}`}>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-sm font-bold flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-amber-400" />
-                    <span>Catalogue des Outils Autonomes ({EVRIS_TOOL_CATALOG.length})</span>
-                  </h2>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    10 outils natifs EVRIS (`backend/app/tools/registry.py`) + 4 outils Pont Syntropy OS.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-1 flex-wrap">
-                  {(
-                    [
-                      { id: 'all', label: 'Tous' },
-                      { id: 'syntropy', label: 'Syntropy OS' },
-                      { id: 'pc', label: 'PC Control' },
-                      { id: 'research', label: 'Recherche' },
-                      { id: 'memory', label: 'Mémoire' },
-                    ] as const
-                  ).map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => setToolFilter(f.id)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border cursor-pointer ${
-                        toolFilter === f.id
-                          ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-                          : 'border-white/10 text-zinc-500 hover:text-zinc-200'
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {filteredTools.map((tool) => (
-                  <div
-                    key={tool.name}
-                    className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-mono font-bold text-cyan-300">{tool.name}</span>
-                      <div className="flex items-center gap-1.5">
-                        {tool.requiresConfirm && (
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1">
-                            <Lock className="w-2.5 h-2.5" /> [y/N]
-                          </span>
-                        )}
-                        <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-white/5 text-zinc-400">
-                          {tool.category}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-zinc-400">{tool.description}</p>
-                    <p className="text-[11px] font-mono text-zinc-500">Ex : {tool.example}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===================================================================== */}
-      {/* VUE 4 : LOGS D'EXÉCUTION (evris.log)                                  */}
-      {/* ===================================================================== */}
-      {activeTab === 'logs' && (
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="max-w-5xl mx-auto space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                {(['ALL', 'INFO', 'WARN', 'ERROR'] as const).map((lvl) => (
-                  <button
-                    key={lvl}
-                    type="button"
-                    onClick={() => setLogLevelFilter(lvl)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold border cursor-pointer ${
-                      logLevelFilter === lvl
-                        ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
-                        : 'border-white/10 text-zinc-500 hover:text-zinc-200'
-                    }`}
-                  >
-                    {lvl}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => syncBackend(apiUrl, false)}
-                  className="px-3 py-1.5 rounded-lg text-xs border border-white/10 bg-white/5 hover:bg-white/10 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Actualiser</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLogs([])}
-                  className="px-3 py-1.5 rounded-lg text-xs border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-rose-400 cursor-pointer"
-                >
-                  Vider
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-[#09090d] border border-zinc-800 font-mono text-xs space-y-1.5 min-h-[360px]">
-              {filteredLogs.length === 0 ? (
-                <div className="text-zinc-500 py-8 text-center">Aucun log à afficher.</div>
-              ) : (
-                filteredLogs.map((entry) => (
-                  <div key={entry.id} className="flex items-start gap-2 leading-relaxed">
-                    <span className="text-zinc-600 flex-shrink-0">[{entry.timestamp}]</span>
-                    <span
-                      className={`font-bold flex-shrink-0 w-12 ${
-                        entry.level === 'ERROR'
-                          ? 'text-rose-400'
-                          : entry.level === 'WARN'
-                          ? 'text-amber-400'
-                          : 'text-cyan-400'
-                      }`}
-                    >
-                      {entry.level}
-                    </span>
-                    <span className="text-purple-400 flex-shrink-0">{entry.source}:</span>
-                    <span className="text-zinc-300 break-all">{entry.message}</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===================================================================== */}
-      {/* VUE 5 : CONFIGURATION & CONNEXION FASTAPI                             */}
-      {/* ===================================================================== */}
-      {activeTab === 'settings' && (
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="max-w-4xl mx-auto space-y-5">
-            {/* Connexion Backend FastAPI */}
-            <div className={`p-5 rounded-2xl border space-y-3.5 ${cardBg}`}>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  {backendConnected ? (
-                    <Wifi className="w-4 h-4 text-emerald-400" />
-                  ) : (
-                    <WifiOff className="w-4 h-4 text-amber-400" />
-                  )}
-                  <h2 className="text-sm font-bold">Serveur Local E.V.R.I.S. (FastAPI / WebSocket)</h2>
-                </div>
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                    backendConnected
-                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                      : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                  }`}
-                >
-                  {backendConnected ? 'CONNECTÉ' : 'HORS LIGNE'}
+              <div className="flex items-center justify-between px-2 pt-1.5 text-[10px] text-zinc-500">
+                <span>
+                  Pont Syntropy {injectSyntropyContext ? 'actif' : 'inactif'} ({syntropyContext.pendingTasksCount} tâches · {syntropyContext.notesCount} notes)
                 </span>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="text"
-                  value={apiUrlDraft}
-                  onChange={(e) => setApiUrlDraft(e.target.value)}
-                  placeholder="http://127.0.0.1:8000"
-                  className={`flex-1 px-3 py-2 rounded-xl text-xs font-mono border outline-none ${
-                    isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-300'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const saved = saveEvrisUrl(apiUrlDraft);
-                    setApiUrl(saved);
-                    syncBackend(saved, false);
-                  }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isCheckingBackend ? 'animate-spin' : ''}`} />
-                  <span>Enregistrer &amp; Tester</span>
-                </button>
-              </div>
-
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 text-[11px] font-mono text-zinc-400 space-y-1">
-                <div className="text-zinc-300 font-semibold">Endpoints attendus par l&apos;interface (Phase 1b) :</div>
-                <div>• WebSocket streaming : <span className="text-cyan-400">WS /ws/chat</span> (ou fallback <span className="text-cyan-400">POST /api/chat</span>)</div>
-                <div>• État &amp; Télémétrie : <span className="text-cyan-400">GET /api/status</span> • Réglages : <span className="text-cyan-400">POST /api/settings</span></div>
-                <div>• Mémoires &amp; Logs : <span className="text-cyan-400">GET/POST/DELETE /api/memories</span> • <span className="text-cyan-400">GET /api/logs</span> • <span className="text-cyan-400">POST /api/approvals/{'{id}'}</span></div>
-              </div>
-            </div>
-
-            {/* Réglages persistants E.V.R.I.S. */}
-            <div className={`p-5 rounded-2xl border space-y-4 ${cardBg}`}>
-              <h2 className="text-sm font-bold">Paramètres du Routeur &amp; Sécurité</h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {/* Pro Node */}
-                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-bold">Nœud PRO (`qwen3.5:9b`)</div>
-                    <div className="text-[11px] text-zinc-500">Commande `/pro on|off`</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => applySettingToggle('pro_enabled', !proEnabled)}
-                    className={`w-11 h-6 rounded-full p-0.5 flex items-center transition-colors cursor-pointer ${
-                      proEnabled ? 'bg-amber-500 justify-end' : 'bg-zinc-700 justify-start'
-                    }`}
-                  >
-                    <span className="w-5 h-5 rounded-full bg-white shadow" />
-                  </button>
-                </div>
-
-                {/* Confirm Risky Actions */}
-                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-bold">Confirmation Actions Risquées</div>
-                    <div className="text-[11px] text-zinc-500">ApprovalBell [y/N] (`/confirm`)</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => applySettingToggle('confirm_risky_actions', !confirmRisky)}
-                    className={`w-11 h-6 rounded-full p-0.5 flex items-center transition-colors cursor-pointer ${
-                      confirmRisky ? 'bg-emerald-500 justify-end' : 'bg-zinc-700 justify-start'
-                    }`}
-                  >
-                    <span className="w-5 h-5 rounded-full bg-white shadow" />
-                  </button>
-                </div>
-
-                {/* Web Search */}
-                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-bold flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Recherche Web Live</span>
-                    </div>
-                    <div className="text-[11px] text-zinc-500">DuckDuckGo / Wikipedia (`/websearch`)</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => applySettingToggle('web_search_enabled', !webSearchEnabled)}
-                    className={`w-11 h-6 rounded-full p-0.5 flex items-center transition-colors cursor-pointer ${
-                      webSearchEnabled ? 'bg-cyan-500 justify-end' : 'bg-zinc-700 justify-start'
-                    }`}
-                  >
-                    <span className="w-5 h-5 rounded-full bg-white shadow" />
-                  </button>
-                </div>
-
-                {/* Test ApprovalBell */}
-                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-bold">Aperçu ApprovalBell</div>
-                    <div className="text-[11px] text-zinc-500">Simuler une confirmation système</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={triggerDemoApproval}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/35 cursor-pointer"
-                  >
-                    Tester
-                  </button>
-                </div>
-              </div>
-
-              {/* Seuil RAM Pro */}
-              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold">Garde-fou RAM libre minimum pour modèles 9B (`/ram`)</span>
-                  <span className="text-xs font-mono font-bold text-cyan-400">{ramThresholdGb.toFixed(1)} Go</span>
-                </div>
-                <input
-                  type="range"
-                  min={2}
-                  max={16}
-                  step={0.5}
-                  value={ramThresholdGb}
-                  onChange={(e) => applySettingToggle('pro_min_free_ram_gb', parseFloat(e.target.value))}
-                  className="w-full h-1.5 rounded-full accent-cyan-400 cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] font-mono text-zinc-500">
-                  <span>2.0 Go</span>
-                  <span>Recommandé : 5.5 Go</span>
-                  <span>16.0 Go</span>
-                </div>
+                <span className="font-mono">{activeModelChip}</span>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* ===================================================================== */}
-      {/* MODALE APPROVALBELL (Confirmation sécurité actions PC sensibles)      */}
+      {/* TIROIR LATÉRAL SYSTÈME (Noyau ARC, Mémoires, Logs/Outils, Connexion)  */}
       {/* ===================================================================== */}
-      {activeApproval && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      {drawerOpen && (
+        <div className="fixed inset-0 z-40 flex justify-end">
           <div
-            className={`w-full max-w-md rounded-2xl border p-5 space-y-4 shadow-2xl ${
-              isDark ? 'bg-zinc-950 border-amber-500/40 text-zinc-100' : 'bg-white border-amber-300 text-zinc-900'
+            className="absolute inset-0 bg-black/45 backdrop-blur-xs"
+            onClick={() => setDrawerOpen(false)}
+          />
+          <aside
+            className={`relative z-10 w-full max-w-md h-full flex flex-col border-l shadow-2xl ${
+              isDark
+                ? 'bg-zinc-950 border-zinc-800 text-zinc-100'
+                : 'bg-white border-zinc-200 text-zinc-900'
             }`}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-                <ShieldAlert className="w-5 h-5" />
-                <span>ApprovalBell — Confirmation requise</span>
+            {/* Header tiroir */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800/60">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-sm font-bold tracking-wide">Système E.V.R.I.S.</h3>
               </div>
               <button
                 type="button"
-                onClick={() => setActiveApproval(null)}
-                className="p-1 rounded-lg text-zinc-500 hover:text-zinc-200 cursor-pointer"
+                onClick={() => setDrawerOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-zinc-800/50 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-zinc-900/90 border border-zinc-800 font-mono text-xs space-y-1.5 text-zinc-200">
-              <div>
-                <span className="text-zinc-500">Outil  :</span>{' '}
-                <span className="text-cyan-400 font-bold">{activeApproval.tool}</span>
-              </div>
-              <div>
-                <span className="text-zinc-500">Cible  :</span>{' '}
-                <span className="text-amber-300">{activeApproval.target}</span>
-              </div>
-              <div>
-                <span className="text-zinc-500">Raison :</span> {activeApproval.reason}
-              </div>
+            {/* 4 mini-onglets dans le tiroir */}
+            <div className="grid grid-cols-4 gap-1 p-2 border-b border-zinc-800/50 text-[11px] font-semibold">
+              {(
+                [
+                  { id: 'core' as DrawerTab, label: 'Noyau', icon: Activity },
+                  { id: 'memories' as DrawerTab, label: `Mém. (${memories.length})`, icon: Brain },
+                  { id: 'system' as DrawerTab, label: 'Logs', icon: Terminal },
+                  { id: 'settings' as DrawerTab, label: 'Config', icon: SlidersHorizontal },
+                ] as const
+              ).map((t) => {
+                const Icon = t.icon;
+                const active = drawerTab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setDrawerTab(t.id)}
+                    className={`py-2 px-2 rounded-xl flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                      active
+                        ? isNothing
+                          ? 'bg-white text-black'
+                          : 'bg-purple-600 text-white'
+                        : 'text-zinc-500 hover:text-zinc-200'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="flex items-center justify-end gap-2">
+            {/* Contenu scrollable du tiroir */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              {drawerTab === 'core' && (
+                <>
+                  {/* Contrôle Luminosité LED */}
+                  <div className={`p-4 rounded-2xl border space-y-3 ${surfacePanel}`}>
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="flex items-center gap-1.5">
+                        <Sun className="w-3.5 h-3.5 text-cyan-400" />
+                        Intensité LED ARC
+                      </span>
+                      <span className="font-mono text-cyan-400">{arcBrightness} %</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={20}
+                      max={100}
+                      value={arcBrightness}
+                      onChange={(e) => setArcBrightness(Number(e.target.value))}
+                      className="w-full accent-cyan-400 cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Testeur des 8 états du noyau */}
+                  <div className={`p-4 rounded-2xl border space-y-3 ${surfacePanel}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold">Aperçu des 8 états ARC</span>
+                      {manualPreviewState && (
+                        <button
+                          type="button"
+                          onClick={() => setManualPreviewState(null)}
+                          className="text-[11px] text-cyan-400 hover:underline cursor-pointer"
+                        >
+                          Retour auto
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {CORE_STATE_LIST.map((st) => {
+                        const info = EVRIS_CORE_STATES[st];
+                        const selected = effectiveCoreState === st;
+                        return (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() =>
+                              setManualPreviewState((prev) => (prev === st ? null : st))
+                            }
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                              selected
+                                ? 'border-cyan-400/60 bg-cyan-500/10'
+                                : isDark
+                                ? 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700'
+                                : 'border-zinc-200 bg-zinc-50 hover:border-zinc-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span style={{ color: info.color }} className="text-sm font-bold">
+                                {info.icon}
+                              </span>
+                              {manualPreviewState === st && (
+                                <span className="text-[9px] font-mono text-cyan-400">TEST</span>
+                              )}
+                            </div>
+                            <div className="text-xs font-semibold mt-1">{info.name}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Télémétrie Workstation */}
+                  <div className={`p-4 rounded-2xl border space-y-3 ${surfacePanel}`}>
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span>Workstation ({telemetry.hostname})</span>
+                      <button
+                        type="button"
+                        onClick={() => syncBackend(apiUrl, false)}
+                        className="text-[11px] text-zinc-400 hover:text-white inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isCheckingBackend ? 'animate-spin' : ''}`} />
+                        Sync
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2.5 text-xs">
+                      <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/70">
+                        <div className="flex items-center gap-1.5 text-zinc-400 text-[11px]">
+                          <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                          CPU
+                        </div>
+                        <div className="text-lg font-bold font-mono mt-1">
+                          {telemetry.cpu_percent}%
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/70">
+                        <div className="flex items-center gap-1.5 text-zinc-400 text-[11px]">
+                          <HardDrive className="w-3.5 h-3.5 text-amber-400" />
+                          RAM libre
+                        </div>
+                        <div className="text-lg font-bold font-mono mt-1">
+                          {telemetry.ram_free_gb} Go
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-[11px] text-zinc-500 font-mono space-y-1 pt-1">
+                      <div>FAST : {modelsStatus.fast?.model || 'qwen3.5:4b'}</div>
+                      <div>PRO : {modelsStatus.pro?.model || 'qwen3.5:9b'}</div>
+                      <div>LIMITLESS : {modelsStatus.limitless?.model || 'qwen3.5-abliterated:9b'}</div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {drawerTab === 'memories' && (
+                <>
+                  <form onSubmit={handleAddMemory} className="space-y-2">
+                    <div className="flex gap-2">
+                      <select
+                        value={newMemCategory}
+                        onChange={(e) => setNewMemCategory(e.target.value)}
+                        className={`px-2.5 py-2 rounded-xl border text-xs ${
+                          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
+                        }`}
+                      >
+                        <option value="preference">Préférence</option>
+                        <option value="hardware">Matériel</option>
+                        <option value="project">Projet</option>
+                        <option value="system">Système</option>
+                      </select>
+                      <input
+                        value={newMemContent}
+                        onChange={(e) => setNewMemContent(e.target.value)}
+                        placeholder="Ajouter un fait mémorisé..."
+                        className={`flex-1 px-3 py-2 rounded-xl border text-xs outline-none ${
+                          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
+                        }`}
+                      />
+                      <button
+                        type="submit"
+                        className="px-3 py-2 rounded-xl bg-purple-600 text-white text-xs font-semibold cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </form>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-zinc-500">
+                      <span>{memories.length} mémoire(s)</span>
+                      {memories.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMemory('all')}
+                          className="text-rose-400 hover:underline cursor-pointer"
+                        >
+                          Tout effacer
+                        </button>
+                      )}
+                    </div>
+                    {memories.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`p-3 rounded-xl border flex items-start justify-between gap-2 text-xs ${surfacePanel}`}
+                      >
+                        <div className="space-y-1 min-w-0">
+                          <span className="inline-block px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-400 font-mono text-[10px]">
+                            {m.category}
+                          </span>
+                          <p className="leading-relaxed">{m.content}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMemory(m.id)}
+                          className="p-1 text-zinc-500 hover:text-rose-400 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {drawerTab === 'system' && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold">Journal (evris.log)</span>
+                    <div className="flex gap-1">
+                      {(['ALL', 'INFO', 'WARN', 'ERROR'] as const).map((lvl) => (
+                        <button
+                          key={lvl}
+                          type="button"
+                          onClick={() => setLogLevelFilter(lvl)}
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono cursor-pointer ${
+                            logLevelFilter === lvl
+                              ? 'bg-purple-600 text-white'
+                              : 'text-zinc-500 hover:text-zinc-200'
+                          }`}
+                        >
+                          {lvl}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto font-mono text-[11px]">
+                    {filteredLogs.slice().reverse().map((l) => (
+                      <div
+                        key={l.id}
+                        className="p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/60"
+                      >
+                        <span className="text-zinc-500">{l.timestamp}</span>{' '}
+                        <span
+                          className={
+                            l.level === 'ERROR'
+                              ? 'text-rose-400'
+                              : l.level === 'WARN'
+                              ? 'text-amber-400'
+                              : 'text-cyan-400'
+                          }
+                        >
+                          [{l.level}]
+                        </span>{' '}
+                        <span>{l.message}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 space-y-2">
+                    <div className="text-xs font-semibold">
+                      Outils disponibles ({EVRIS_TOOL_CATALOG.length})
+                    </div>
+                    <div className="space-y-1.5">
+                      {EVRIS_TOOL_CATALOG.map((t) => (
+                        <div
+                          key={t.name}
+                          className="p-2.5 rounded-xl bg-zinc-900/40 border border-zinc-800/60 text-xs"
+                        >
+                          <div className="font-mono text-cyan-400 text-[11px]">{t.name}</div>
+                          <div className="text-[11px] text-zinc-500 mt-0.5">{t.description}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {drawerTab === 'settings' && (
+                <>
+                  <div className={`p-4 rounded-2xl border space-y-3 ${surfacePanel}`}>
+                    <label className="text-xs font-semibold block">URL Backend FastAPI</label>
+                    <div className="flex gap-2">
+                      <input
+                        value={apiUrlDraft}
+                        onChange={(e) => setApiUrlDraft(e.target.value)}
+                        className={`flex-1 px-3 py-2 rounded-xl border text-xs font-mono outline-none ${
+                          isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          saveEvrisUrl(apiUrlDraft);
+                          setApiUrl(apiUrlDraft);
+                          syncBackend(apiUrlDraft, false);
+                        }}
+                        className="px-3 py-2 rounded-xl bg-purple-600 text-white text-xs font-semibold cursor-pointer"
+                      >
+                        Tester
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={`p-4 rounded-2xl border space-y-3 text-xs ${surfacePanel}`}>
+                    {[
+                      {
+                        label: 'Activer modèle PRO (9B)',
+                        val: proEnabled,
+                        onToggle: () => applySettingToggle('pro_enabled', !proEnabled),
+                      },
+                      {
+                        label: 'Confirmation actions sensibles [Y]/[N]',
+                        val: confirmRisky,
+                        onToggle: () => applySettingToggle('confirm_risky_actions', !confirmRisky),
+                      },
+                      {
+                        label: 'Recherche Web temps réel',
+                        val: webSearchEnabled,
+                        onToggle: () => applySettingToggle('web_search_enabled', !webSearchEnabled),
+                      },
+                    ].map((row) => (
+                      <label
+                        key={row.label}
+                        className="flex items-center justify-between gap-2 cursor-pointer"
+                      >
+                        <span>{row.label}</span>
+                        <input
+                          type="checkbox"
+                          checked={row.val}
+                          onChange={row.onToggle}
+                          className="accent-cyan-400 w-4 h-4"
+                        />
+                      </label>
+                    ))}
+
+                    <div className="pt-2 space-y-1">
+                      <div className="flex justify-between">
+                        <span>Seuil RAM libre (9B)</span>
+                        <span className="font-mono text-cyan-400">
+                          {ramThresholdGb.toFixed(1)} Go
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={2}
+                        max={16}
+                        step={0.5}
+                        value={ramThresholdGb}
+                        onChange={(e) =>
+                          applySettingToggle('pro_min_free_ram_gb', parseFloat(e.target.value))
+                        }
+                        className="w-full accent-cyan-400 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDrawerOpen(false);
+                      triggerDemoApproval();
+                    }}
+                    className="w-full py-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-semibold cursor-pointer hover:bg-amber-500/20"
+                  >
+                    Simuler une alerte ApprovalBell [Y]/[N]
+                  </button>
+                </>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* MODALE APPROVALBELL [Y] / [N]                                         */}
+      {/* ===================================================================== */}
+      {activeApproval && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div
+            className={`w-full max-w-md p-6 rounded-3xl border space-y-4 shadow-2xl ${
+              isDark ? 'bg-zinc-950 border-amber-500/40' : 'bg-white border-amber-400'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold">Confirmation de sécurité</h3>
+                <p className="text-xs text-zinc-500">{activeApproval.createdAt}</p>
+              </div>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-1.5 text-xs">
+              <div>
+                <span className="text-zinc-500">Outil : </span>
+                <span className="font-mono text-amber-300">{activeApproval.tool}</span>
+              </div>
+              <div>
+                <span className="text-zinc-500">Cible : </span>
+                <span className="font-mono">{activeApproval.target}</span>
+              </div>
+              <p className="text-zinc-400 pt-1">{activeApproval.reason}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => handleApprovalDecision(activeApproval, false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold border border-zinc-700 hover:bg-zinc-800 text-zinc-300 cursor-pointer"
+                className="py-2.5 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-300 text-xs font-bold cursor-pointer hover:bg-rose-500/20"
               >
                 Refuser [N]
               </button>
               <button
                 type="button"
                 onClick={() => handleApprovalDecision(activeApproval, true)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-black cursor-pointer"
+                className="py-2.5 rounded-xl bg-emerald-500 text-black text-xs font-bold cursor-pointer hover:bg-emerald-400"
               >
                 Autoriser [Y]
               </button>
@@ -2035,5 +1939,3 @@ export const EvrisHub: React.FC = () => {
     </div>
   );
 };
-
-export default EvrisHub;
