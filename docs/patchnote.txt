@@ -2,6 +2,15 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V3.0.4] - 2026-11-23 (Fond Dynamique E.V.R.I.S. Aligné sur les Couleurs de Mode du Terminal)
+--------------------------------------------------------------------------------
+1. Ambiance Visuelle par Mode de Routage (`src/components/evris/EvrisHub.tsx`) :
+- Ajout d'un fond ambiant réactif (`transition-all duration-700`), d'une ligne supérieure 2px et de pilules de mode colorées reprenant la palette exacte du terminal E.V.R.I.S. (`evris.py`) :
+  * **AUTO** : Indigo / Cyan adaptatif
+  * **FAST • 4B** : Cyan (`#22d3ee`)
+  * **PRO • 9B** : Jaune / Ambre (`#facc15`)
+  * **LIMITLESS** : Magenta / Fuchsia (`#d946ef`)
+
 #### [V3.0.3] - 2026-11-23 (Lancement Réel d'E.V.R.I.S. & Ollama depuis le Bouton « Démarrer EVRIS »)
 --------------------------------------------------------------------------------
 1. Moteur de Lancement Natif Desktop (`electron/main.js`, `electron/preload.js`) :

@@ -76,6 +76,54 @@ const MODE_OPTIONS: { id: EvrisRoutingMode; label: string; short: string; modelH
   { id: 'limitless', label: 'LIMITLESS', short: '∞', modelHint: 'qwen3.5-abliterated:9b' },
 ];
 
+const MODE_THEME: Record<
+  EvrisRoutingMode,
+  {
+    accentHex: string;
+    darkBg: string;
+    lightBg: string;
+    activePill: string;
+    topLine: string;
+  }
+> = {
+  auto: {
+    accentHex: '#6366f1',
+    darkBg:
+      'radial-gradient(ellipse 80% 55% at 50% 0%, rgba(99, 102, 241, 0.18), transparent 65%), radial-gradient(ellipse 60% 45% at 85% 95%, rgba(34, 211, 238, 0.12), transparent 65%)',
+    lightBg:
+      'radial-gradient(ellipse 80% 55% at 50% 0%, rgba(99, 102, 241, 0.12), transparent 65%), radial-gradient(ellipse 60% 45% at 85% 95%, rgba(34, 211, 238, 0.08), transparent 65%)',
+    activePill: 'bg-indigo-500/25 text-indigo-300 border border-indigo-400/50 shadow-xs',
+    topLine: 'linear-gradient(90deg, #6366f1 0%, #22d3ee 100%)',
+  },
+  fast: {
+    accentHex: '#22d3ee',
+    darkBg:
+      'radial-gradient(ellipse 85% 60% at 50% 0%, rgba(34, 211, 238, 0.22), transparent 65%), radial-gradient(ellipse 60% 50% at 20% 95%, rgba(6, 182, 212, 0.14), transparent 65%)',
+    lightBg:
+      'radial-gradient(ellipse 85% 60% at 50% 0%, rgba(6, 182, 212, 0.14), transparent 65%), radial-gradient(ellipse 60% 50% at 20% 95%, rgba(34, 211, 238, 0.09), transparent 65%)',
+    activePill: 'bg-cyan-500/25 text-cyan-300 border border-cyan-400/55 shadow-xs',
+    topLine: 'linear-gradient(90deg, #06b6d4 0%, #22d3ee 100%)',
+  },
+  pro: {
+    accentHex: '#facc15',
+    darkBg:
+      'radial-gradient(ellipse 85% 60% at 50% 0%, rgba(250, 204, 21, 0.20), transparent 65%), radial-gradient(ellipse 60% 50% at 80% 95%, rgba(245, 158, 11, 0.14), transparent 65%)',
+    lightBg:
+      'radial-gradient(ellipse 85% 60% at 50% 0%, rgba(245, 158, 11, 0.14), transparent 65%), radial-gradient(ellipse 60% 50% at 80% 95%, rgba(250, 204, 21, 0.10), transparent 65%)',
+    activePill: 'bg-amber-400/25 text-amber-300 border border-amber-400/55 shadow-xs',
+    topLine: 'linear-gradient(90deg, #f59e0b 0%, #facc15 100%)',
+  },
+  limitless: {
+    accentHex: '#d946ef',
+    darkBg:
+      'radial-gradient(ellipse 85% 60% at 50% 0%, rgba(217, 70, 239, 0.24), transparent 65%), radial-gradient(ellipse 60% 50% at 80% 95%, rgba(168, 85, 247, 0.16), transparent 65%)',
+    lightBg:
+      'radial-gradient(ellipse 85% 60% at 50% 0%, rgba(217, 70, 239, 0.15), transparent 65%), radial-gradient(ellipse 60% 50% at 80% 95%, rgba(168, 85, 247, 0.10), transparent 65%)',
+    activePill: 'bg-fuchsia-500/25 text-fuchsia-300 border border-fuchsia-400/55 shadow-xs',
+    topLine: 'linear-gradient(90deg, #c026d3 0%, #e879f9 100%)',
+  },
+};
+
 const QUICK_PROMPTS: { label: string; prompt: string }[] = [
   { label: 'Mes tâches du jour', prompt: '/tasks' },
   { label: 'Mes notes récentes', prompt: '/notes' },
@@ -1225,11 +1273,21 @@ export const EvrisHub: React.FC = () => {
     );
   }
 
+  const modeTheme = MODE_THEME[routingMode] || MODE_THEME.auto;
+
   return (
     <div
-      className="relative flex flex-col flex-1 h-full min-h-0 w-full overflow-hidden"
+      className="relative flex flex-col flex-1 h-full min-h-0 w-full overflow-hidden transition-all duration-700"
+      style={{
+        backgroundImage: isDark ? modeTheme.darkBg : modeTheme.lightBg,
+      }}
       onMouseDown={resetSleepTimer}
     >
+      {/* Ligne supérieure dynamique aux couleurs du mode actif (comme sur le terminal) */}
+      <div
+        className="h-[2px] w-full flex-shrink-0 transition-all duration-500"
+        style={{ background: modeTheme.topLine }}
+      />
       {/* BARRE SUPÉRIEURE ÉPURÉE (1 seule ligne, zéro surcharge) */}
       <header
         className={`flex items-center justify-between gap-2 px-3 sm:px-5 h-13 border-b flex-shrink-0 min-w-0 ${
@@ -1293,8 +1351,8 @@ export const EvrisHub: React.FC = () => {
                         ? 'bg-white text-black'
                         : isCyberpunk
                         ? 'bg-[#FCEE0A] text-black'
-                        : 'bg-purple-600 text-white shadow-xs'
-                      : 'text-zinc-500 hover:text-zinc-200'
+                        : MODE_THEME[m.id].activePill
+                      : 'border border-transparent text-zinc-500 hover:text-zinc-200'
                   }`}
                   title={m.modelHint}
                 >
