@@ -2,6 +2,12 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V2.7.13] - 2026-11-23 (Bouton Manuel « Démarrer EVRIS » dans l'Interface E.V.R.I.S.)
+--------------------------------------------------------------------------------
+1. Contrôle Manuel de Connexion (`src/components/evris/EvrisHub.tsx`) :
+- Remplacement du bouton « Pont Syntropy » dans la colonne de présence par un bouton dédié **« Démarrer EVRIS »** (basculant en **« Arrêter EVRIS »** une fois connecté), également accessible directement sous le Noyau ARC sur l'écran d'accueil.
+- Désactivation du polling automatique au chargement : la connexion au backend local (`127.0.0.1:8000`) et la synchronisation des modèles s'initient manuellement au clic, avec feedback temps réel sur le Noyau ARC 25×25 (`thinking` pendant la connexion, `happy` si connecté, `error` si hors ligne).
+
 #### [V2.7.12] - 2026-11-21 (Refonte Complète de l'Interface E.V.R.I.S. — Noyau ARC 25×25 Interactif & Design Épuré)
 --------------------------------------------------------------------------------
 1. Intégration Native du Noyau ARC 25×25 (`src/components/evris/EvrisArcCore.tsx`) :

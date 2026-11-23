@@ -26,6 +26,7 @@ import {
   WifiOff,
   Sparkles,
   Sun,
+  Power,
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -194,7 +195,7 @@ export const EvrisHub: React.FC = () => {
     if (approvals.length > 0 || activeApproval) return 'alert';
     if (transientState === 'error') return 'error';
     if (isStreamingTokens) return 'speaking';
-    if (isSending) return 'thinking';
+    if (isSending || isCheckingBackend) return 'thinking';
     if (transientState) return transientState;
     if (isTyping) return 'listening';
     if (isSleeping) return 'sleep';
@@ -206,6 +207,7 @@ export const EvrisHub: React.FC = () => {
     transientState,
     isStreamingTokens,
     isSending,
+    isCheckingBackend,
     isTyping,
     isSleeping,
   ]);
@@ -397,18 +399,37 @@ export const EvrisHub: React.FC = () => {
         setBackendConnected(false);
         if (!silent) {
           appendLocalLog('WARN', 'bridge', `Backend hors ligne (${targetUrl}) — pont local actif.`);
+          pulseTransientState('error', 2600);
         }
       }
-      if (!silent) setIsCheckingBackend(false);
+      if (!silent) {
+        setIsCheckingBackend(false);
+        setLiveStatusLine('');
+      }
+      return res.connected;
     },
     [appendLocalLog, pulseTransientState]
   );
 
+  // Maintien du polling uniquement une fois démarré manuellement
   useEffect(() => {
-    syncBackend(apiUrl, true);
+    if (!backendConnected) return;
     const interval = setInterval(() => syncBackend(apiUrl, true), 15000);
     return () => clearInterval(interval);
-  }, [apiUrl, syncBackend]);
+  }, [apiUrl, backendConnected, syncBackend]);
+
+  const handleToggleEvrisConnection = async () => {
+    resetSleepTimer();
+    setManualPreviewState(null);
+    if (backendConnected) {
+      setBackendConnected(false);
+      setModelsStatus(DEFAULT_OFFLINE_STATUS);
+      appendLocalLog('INFO', 'bridge', 'Connexion E.V.R.I.S. arrêtée manuellement.');
+      return;
+    }
+    setLiveStatusLine('Démarrage de la connexion E.V.R.I.S. & des modèles...');
+    await syncBackend(apiUrl, false);
+  };
 
   const applyMode = async (mode: EvrisRoutingMode) => {
     resetSleepTimer();
@@ -1207,23 +1228,35 @@ export const EvrisHub: React.FC = () => {
             <div className="w-full space-y-2.5 pt-4 border-t border-zinc-800/40">
               <button
                 type="button"
-                onClick={() => setInjectSyntropyContext((v) => !v)}
-                className={`w-full px-3 py-2 rounded-xl border text-[11px] font-medium flex items-center justify-between transition-all cursor-pointer ${
-                  injectSyntropyContext
-                    ? isDark
-                      ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
-                      : 'bg-cyan-50 border-cyan-300 text-cyan-700'
+                onClick={handleToggleEvrisConnection}
+                disabled={isCheckingBackend}
+                className={`w-full px-3 py-2.5 rounded-xl border text-[11px] font-semibold flex items-center justify-between transition-all cursor-pointer disabled:opacity-60 ${
+                  backendConnected
+                    ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-400 hover:bg-rose-500/15 hover:border-rose-500/35 hover:text-rose-300'
+                    : isNothing
+                    ? 'bg-white text-black border-white hover:bg-zinc-200'
+                    : isCyberpunk
+                    ? 'bg-[#FCEE0A] text-black border-[#FCEE0A]'
                     : isDark
-                    ? 'bg-zinc-900/50 border-zinc-800 text-zinc-500'
-                    : 'bg-zinc-100 border-zinc-200 text-zinc-500'
+                    ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/25'
+                    : 'bg-cyan-50 border-cyan-300 text-cyan-700 hover:bg-cyan-100'
                 }`}
+                title={
+                  backendConnected
+                    ? 'Couper la connexion avec E.V.R.I.S.'
+                    : `Démarrer la connexion avec E.V.R.I.S. (${apiUrl})`
+                }
               >
                 <span className="flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5" />
-                  Pont Syntropy
+                  <Power className={`w-3.5 h-3.5 ${isCheckingBackend ? 'animate-spin' : ''}`} />
+                  {isCheckingBackend
+                    ? 'Connexion...'
+                    : backendConnected
+                    ? 'Arrêter EVRIS'
+                    : 'Démarrer EVRIS'}
                 </span>
                 <span className="font-mono text-[10px]">
-                  {injectSyntropyContext ? 'ON' : 'OFF'}
+                  {backendConnected ? 'ON' : 'OFF'}
                 </span>
               </button>
 
@@ -1304,9 +1337,34 @@ export const EvrisHub: React.FC = () => {
                     {coreMeta.title}
                   </h2>
                   <p className="text-xs sm:text-sm text-zinc-500 max-w-md mx-auto">
-                    {coreMeta.detail}
+                    {liveStatusLine || coreMeta.detail}
                   </p>
                 </div>
+
+                {/* Bouton manuel Démarrer / Arrêter EVRIS sur l'écran d'accueil */}
+                <button
+                  type="button"
+                  onClick={handleToggleEvrisConnection}
+                  disabled={isCheckingBackend}
+                  className={`px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold border inline-flex items-center gap-2 transition-all cursor-pointer disabled:opacity-60 ${
+                    backendConnected
+                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-rose-500/15 hover:border-rose-500/40 hover:text-rose-300'
+                      : isNothing
+                      ? 'bg-white text-black border-white hover:bg-zinc-200'
+                      : isCyberpunk
+                      ? 'bg-[#FCEE0A] text-black border-[#FCEE0A]'
+                      : 'bg-cyan-500/15 border-cyan-500/45 text-cyan-300 hover:bg-cyan-500/25 shadow-lg shadow-cyan-500/10'
+                  }`}
+                >
+                  <Power className={`w-4 h-4 ${isCheckingBackend ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isCheckingBackend
+                      ? 'Connexion à EVRIS & modèles...'
+                      : backendConnected
+                      ? 'EVRIS connecté — Arrêter'
+                      : 'Démarrer EVRIS'}
+                  </span>
+                </button>
 
                 {/* 4 suggestions rapides minimalistes */}
                 <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
