@@ -434,7 +434,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       />
 
       {/* Conteneur principal */}
-      <div className="flex-1 h-screen flex flex-col overflow-hidden relative z-10">
+      <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden relative z-10">
         {/* Barre d'en-tête mobile (< md) */}
         <header
           className={`flex md:hidden items-center justify-between px-3 sm:px-4 py-2 border-b z-20 select-none flex-shrink-0
@@ -574,7 +574,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </header>
 
         {/* Zone de contenu principale */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+        <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden relative flex flex-col pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
           {children}
         </main>
 

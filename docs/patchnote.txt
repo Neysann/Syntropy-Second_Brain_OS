@@ -2,6 +2,15 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V3.0.2] - 2026-11-23 (Correctifs Mise en Page Desktop & Rendu Markdown dans E.V.R.I.S.)
+--------------------------------------------------------------------------------
+1. Correction du Débordement Horizontal & Vertical sur Desktop (`src/components/layout/AppShell.tsx`, `src/components/evris/EvrisHub.tsx`) :
+- Ajout de `min-w-0` et `min-h-0` sur le conteneur principal et `<main>` dans `AppShell.tsx` (`h-full` au lieu de `h-screen`) afin d'empêcher tout rognage sur les bords droit et bas de la fenêtre Electron.
+- Compaction de la colonne de présence E.V.R.I.S. (`w-56`, Noyau ARC `140 px`, défilement interne `overflow-y-auto`) et de l'en-tête (`h-13`) pour que le bouton **« Démarrer EVRIS »**, les compteurs et le champ de saisie restent intégralement visibles même sur petits écrans.
+
+2. Rendu Markdown Natif dans les Réponses E.V.R.I.S. (`src/components/evris/EvrisHub.tsx`) :
+- Remplacement de l'affichage texte brut (`**gras**`, `` `code` ``) par un moteur de rendu Markdown léger formatant proprement le gras, les badges de code inline, les titres, citations et listes à puces.
+
 #### [V3.0.1] - 2026-11-23 (Restriction Navigateur pour E.V.R.I.S. — Exclusif à l'Application Desktop)
 --------------------------------------------------------------------------------
 1. Écran d'Information Navigateur (`src/components/evris/EvrisHub.tsx`) :

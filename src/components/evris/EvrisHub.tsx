@@ -96,6 +96,73 @@ const CORE_STATE_LIST: EvrisCoreState[] = [
 
 const BRIGHTNESS_STORAGE_KEY = 'syntropy_evris_arc_brightness_v1';
 
+/** Rendu Markdown léger & sûr pour les bulles E.V.R.I.S. (gras, code inline, italique, titres, listes) */
+function renderInlineMarkdown(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|_[^_]+_)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={idx} className="font-bold text-current">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code
+          key={idx}
+          className="px-1.5 py-0.5 rounded-md bg-black/25 border border-white/10 font-mono text-[12px] text-cyan-300"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    if (part.startsWith('_') && part.endsWith('_') && part.length > 2) {
+      return (
+        <em key={idx} className="italic opacity-80">
+          {part.slice(1, -1)}
+        </em>
+      );
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
+}
+
+function renderEvrisMarkdown(content: string): React.ReactNode {
+  const lines = content.split('\n');
+  return (
+    <div className="space-y-1.5">
+      {lines.map((line, i) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={i} className="h-1" />;
+        if (trimmed.startsWith('### ')) {
+          return (
+            <div key={i} className="text-sm font-bold tracking-tight pt-1">
+              {renderInlineMarkdown(trimmed.slice(4))}
+            </div>
+          );
+        }
+        if (trimmed.startsWith('- ')) {
+          return (
+            <div key={i} className="flex items-start gap-2 pl-1">
+              <span className="text-cyan-400 mt-0.5">•</span>
+              <span className="flex-1">{renderInlineMarkdown(trimmed.slice(2))}</span>
+            </div>
+          );
+        }
+        if (trimmed.startsWith('> ')) {
+          return (
+            <div key={i} className="border-l-2 border-cyan-400/50 pl-3 italic opacity-85">
+              {renderInlineMarkdown(trimmed.slice(2))}
+            </div>
+          );
+        }
+        return <div key={i}>{renderInlineMarkdown(line)}</div>;
+      })}
+    </div>
+  );
+}
+
 export const EvrisHub: React.FC = () => {
   const { theme } = useTheme();
   const { settings } = useSettings();
@@ -1130,7 +1197,7 @@ export const EvrisHub: React.FC = () => {
     >
       {/* BARRE SUPÉRIEURE ÉPURÉE (1 seule ligne, zéro surcharge) */}
       <header
-        className={`flex items-center justify-between gap-3 px-4 sm:px-6 h-14 border-b flex-shrink-0 ${
+        className={`flex items-center justify-between gap-2 px-3 sm:px-5 h-13 border-b flex-shrink-0 min-w-0 ${
           isDark ? 'border-zinc-800/70 bg-zinc-950/60' : 'border-zinc-200/80 bg-white/80'
         } backdrop-blur-xl`}
       >
@@ -1259,18 +1326,18 @@ export const EvrisHub: React.FC = () => {
         {/* Colonne de Présence continue (visible sur desktop dès qu'une conversation est active) */}
         {messages.length > 0 && (
           <aside
-            className={`hidden lg:flex flex-col items-center justify-between w-64 flex-shrink-0 p-5 border-r ${
+            className={`hidden lg:flex flex-col items-center justify-between w-56 flex-shrink-0 p-4 border-r overflow-y-auto ${
               isDark ? 'border-zinc-800/70 bg-zinc-950/35' : 'border-zinc-200/80 bg-zinc-50/60'
             }`}
           >
-            <div className="w-full flex flex-col items-center text-center space-y-4">
+            <div className="w-full flex flex-col items-center text-center space-y-3">
               <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
                 Noyau ARC · 25×25
               </div>
 
               <EvrisArcCore
                 state={effectiveCoreState}
-                size={164}
+                size={140}
                 brightness={arcBrightness}
                 framed
               />
@@ -1477,7 +1544,7 @@ export const EvrisHub: React.FC = () => {
 
                       {/* Bulle de message */}
                       <div
-                        className={`max-w-[88%] sm:max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                        className={`max-w-[88%] sm:max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed break-words ${
                           isUser
                             ? isNothing
                               ? 'bg-white text-black font-medium'
@@ -1487,7 +1554,13 @@ export const EvrisHub: React.FC = () => {
                             : `${surfacePanel} border`
                         }`}
                       >
-                        {msg.content || (
+                        {msg.content ? (
+                          isUser ? (
+                            <span className="whitespace-pre-wrap">{msg.content}</span>
+                          ) : (
+                            renderEvrisMarkdown(msg.content)
+                          )
+                        ) : (
                           <span className="inline-flex items-center gap-2 text-xs text-zinc-400">
                             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
                             {liveStatusLine || 'Réflexion en cours...'}
