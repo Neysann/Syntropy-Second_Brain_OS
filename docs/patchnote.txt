@@ -2,6 +2,11 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V3.0.1] - 2026-11-23 (Restriction Navigateur pour E.V.R.I.S. — Exclusif à l'Application Desktop)
+--------------------------------------------------------------------------------
+1. Écran d'Information Navigateur (`src/components/evris/EvrisHub.tsx`) :
+- Sur la version navigateur Web (`!electronAPI?.isDesktop`), la page `/evris` affiche désormais un écran dédié avec le Noyau ARC 25×25 en veille indiquant qu'E.V.R.I.S. n'est pas disponible sur navigateur pour le moment et est uniquement accessible depuis l'application Desktop Windows, accompagné d'un lien direct vers le téléchargement de la dernière release GitHub.
+
 #### [V3.0.0] - 2026-11-23 (Passage en Version Majeure 3.0 — Intégration d'E.V.R.I.S. & Application Desktop Ouverte à Tous)
 --------------------------------------------------------------------------------
 1. Ouverture Publique de l'Application Windows Desktop (.exe) sans Compte Super-Admin :

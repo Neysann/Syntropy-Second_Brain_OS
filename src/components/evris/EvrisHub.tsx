@@ -27,7 +27,10 @@ import {
   Sparkles,
   Sun,
   Power,
+  Download,
+  Laptop,
 } from 'lucide-react';
+import { APP_VERSION } from '@/lib/core/version';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useData } from '@/context/DataContext';
@@ -102,6 +105,14 @@ export const EvrisHub: React.FC = () => {
   const isDark = theme === 'dark';
   const isNothing = settings.uiStyle === 'nothing';
   const isCyberpunk = settings.uiStyle === 'cyberpunk';
+
+  const [isDesktopApp, setIsDesktopApp] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setIsDesktopApp(
+      typeof window !== 'undefined' && Boolean((window as any).electronAPI?.isDesktop)
+    );
+  }, []);
 
   // Connexion & réglages
   const [apiUrl, setApiUrl] = useState<string>('http://127.0.0.1:8000');
@@ -1060,6 +1071,57 @@ export const EvrisHub: React.FC = () => {
     : isDark
     ? 'bg-zinc-900/55 border-zinc-800/80 backdrop-blur-xl'
     : 'bg-white/85 border-zinc-200 shadow-xs backdrop-blur-xl';
+
+  if (isDesktopApp === false) {
+    return (
+      <div className="flex flex-col flex-1 h-full min-h-0 w-full items-center justify-center p-6 overflow-y-auto">
+        <div
+          className={`w-full max-w-lg p-8 rounded-3xl border text-center space-y-6 ${surfacePanel}`}
+        >
+          <div className="flex justify-center">
+            <EvrisArcCore state="sleep" size={168} brightness={arcBrightness} framed />
+          </div>
+
+          <div className="space-y-2.5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+              <Laptop className="w-3.5 h-3.5" />
+              Application Desktop uniquement
+            </span>
+            <h1
+              className={`text-xl sm:text-2xl font-extrabold tracking-tight ${
+                isNothing ? 'font-ndot tracking-wider' : ''
+              }`}
+            >
+              E.V.R.I.S. n&apos;est pas disponible sur navigateur pour le moment
+            </h1>
+            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-md mx-auto">
+              E.V.R.I.S. est uniquement disponible sur l&apos;application Desktop{' '}
+              <strong className={isDark ? 'text-zinc-200' : 'text-zinc-800'}>Syntropy OS</strong>{' '}
+              afin de communiquer directement avec vos modèles IA locaux.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+            <a
+              href="https://github.com/Neysann/second-brain-os/releases/latest"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition-all ${
+                isNothing
+                  ? 'bg-white text-black hover:bg-zinc-200'
+                  : isCyberpunk
+                  ? 'bg-[#FCEE0A] text-black'
+                  : 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/25'
+              }`}
+            >
+              <Download className="w-4 h-4" />
+              <span>Télécharger l&apos;application Windows (v{APP_VERSION})</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
