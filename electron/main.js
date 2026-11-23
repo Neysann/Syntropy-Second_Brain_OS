@@ -2,6 +2,7 @@ const { app, BrowserWindow, globalShortcut, Tray, Menu, Notification, ipcMain, d
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const { spawn, exec } = require('child_process');
 const { setupAutoUpdater, registerAutoUpdaterIpc, autoUpdater } = require('./auto-updater');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
@@ -14,6 +15,7 @@ let isQuitting = false;
 let localServer = null;
 let currentAppUrl = null;
 let currentQuickCaptureShortcut = 'Alt+Space';
+let evrisProcess = null;
 
 const DEFAULT_DESKTOP_CONFIG = {
   shortcut: 'Alt+Space',
@@ -1034,6 +1036,125 @@ function registerIpcHandlers() {
       return { success: false, error: err?.message || String(err) };
     }
   });
+
+  // Lancement / Arrêt natif du moteur local E.V.R.I.S. (Ollama + FastAPI uvicorn)
+  const stopEvrisProcess = () => {
+    if (!evrisProcess) return;
+    const pid = evrisProcess.pid;
+    try {
+      if (process.platform === 'win32' && pid) {
+        exec(`taskkill /PID ${pid} /T /F`);
+      } else {
+        evrisProcess.kill('SIGTERM');
+      }
+    } catch (_) {}
+    evrisProcess = null;
+  };
+
+  ipcMain.handle('evris-start', async (_event, options = {}) => {
+    const apiUrl = (options.apiUrl || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+    const statusUrl = `${apiUrl}/api/status`;
+
+    // 1. Déjà actif ?
+    if (await checkUrlAlive(statusUrl, 700)) {
+      return { success: true, alreadyRunning: true };
+    }
+
+    // 2. S'assurer qu'Ollama tourne en arrière-plan
+    try {
+      const ollamaAlive = await checkUrlAlive('http://127.0.0.1:11434/api/tags', 700);
+      if (!ollamaAlive) {
+        const localOllama = path.join(
+          process.env.LOCALAPPDATA || '',
+          'Programs',
+          'Ollama',
+          'ollama.exe'
+        );
+        const ollamaBin = fs.existsSync(localOllama) ? localOllama : 'ollama';
+        const ollamaChild = spawn(ollamaBin, ['serve'], {
+          detached: true,
+          stdio: 'ignore',
+          windowsHide: true,
+        });
+        ollamaChild.unref();
+      }
+    } catch (e) {
+      console.warn('[EVRIS] Impossible de lancer Ollama automatiquement:', e?.message || e);
+    }
+
+    // 3. Localiser le backend E.V.R.I.S.
+    const candidateDirs = [
+      options.backendDir,
+      process.env.EVRIS_BACKEND_DIR,
+      'C:\\Projets\\Evris\\backend',
+      path.join(process.env.USERPROFILE || '', 'Projets', 'Evris', 'backend'),
+    ].filter(Boolean);
+
+    const backendDir = candidateDirs.find(
+      (dir) => fs.existsSync(path.join(dir, 'app', 'main.py'))
+    );
+
+    if (!backendDir) {
+      return {
+        success: false,
+        error: 'Backend E.V.R.I.S. introuvable (app/main.py absent dans C:\\Projets\\Evris\\backend).',
+      };
+    }
+
+    const venvPython = path.join(backendDir, 'venv', 'Scripts', 'python.exe');
+    const pythonBin = fs.existsSync(venvPython) ? venvPython : 'python';
+
+    let stderrBuf = '';
+    try {
+      stopEvrisProcess();
+      evrisProcess = spawn(
+        pythonBin,
+        ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8000'],
+        {
+          cwd: backendDir,
+          windowsHide: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      );
+
+      evrisProcess.stderr?.on('data', (chunk) => {
+        stderrBuf = (stderrBuf + chunk.toString()).slice(-600);
+      });
+      evrisProcess.on('exit', () => {
+        evrisProcess = null;
+      });
+    } catch (err) {
+      return {
+        success: false,
+        error: `Impossible de démarrer Python/uvicorn : ${err?.message || err}`,
+      };
+    }
+
+    // 4. Attendre jusqu'à 18 s que /api/status réponde
+    const deadline = Date.now() + 18000;
+    while (Date.now() < deadline) {
+      if (await checkUrlAlive(statusUrl, 700)) {
+        return { success: true, alreadyRunning: false };
+      }
+      if (!evrisProcess) {
+        return {
+          success: false,
+          error: `Le serveur E.V.R.I.S. s'est arrêté prématurément. ${stderrBuf.trim()}`.trim(),
+        };
+      }
+      await new Promise((r) => setTimeout(r, 450));
+    }
+
+    return {
+      success: false,
+      error: 'Délai dépassé : le serveur E.V.R.I.S. ne répond pas encore sur http://127.0.0.1:8000.',
+    };
+  });
+
+  ipcMain.handle('evris-stop', async () => {
+    stopEvrisProcess();
+    return { success: true };
+  });
 }
 
 // Initialisation globale de l'application
@@ -1120,6 +1241,16 @@ app.whenReady().then(() => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  if (evrisProcess && evrisProcess.pid) {
+    try {
+      if (process.platform === 'win32') {
+        exec(`taskkill /PID ${evrisProcess.pid} /T /F`);
+      } else {
+        evrisProcess.kill('SIGTERM');
+      }
+    } catch (_) {}
+    evrisProcess = null;
+  }
   if (localServer) {
     localServer.close();
   }

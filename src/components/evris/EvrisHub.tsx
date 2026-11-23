@@ -499,13 +499,48 @@ export const EvrisHub: React.FC = () => {
   const handleToggleEvrisConnection = async () => {
     resetSleepTimer();
     setManualPreviewState(null);
+    const electron = typeof window !== 'undefined' ? (window as any).electronAPI : null;
+
     if (backendConnected) {
+      if (electron?.stopEvris) {
+        await electron.stopEvris().catch(() => {});
+      }
       setBackendConnected(false);
       setModelsStatus(DEFAULT_OFFLINE_STATUS);
-      appendLocalLog('INFO', 'bridge', 'Connexion E.V.R.I.S. arrêtée manuellement.');
+      appendLocalLog('INFO', 'bridge', 'Moteur E.V.R.I.S. arrêté manuellement.');
       return;
     }
-    setLiveStatusLine('Démarrage de la connexion E.V.R.I.S. & des modèles...');
+
+    setIsCheckingBackend(true);
+    setLiveStatusLine('Lancement d’Ollama & du moteur E.V.R.I.S....');
+
+    if (electron?.startEvris) {
+      try {
+        const startRes = await electron.startEvris({ apiUrl });
+        if (!startRes?.success) {
+          appendLocalLog(
+            'ERROR',
+            'bridge',
+            `Échec lancement E.V.R.I.S. : ${startRes?.error || 'erreur inconnue'}`
+          );
+          setLiveStatusLine(startRes?.error || 'Impossible de démarrer E.V.R.I.S.');
+          pulseTransientState('error', 4000);
+          setIsCheckingBackend(false);
+          return;
+        }
+        appendLocalLog(
+          'INFO',
+          'bridge',
+          startRes.alreadyRunning
+            ? 'Serveur E.V.R.I.S. déjà actif — synchronisation...'
+            : 'Moteur E.V.R.I.S. & Ollama démarrés avec succès.'
+        );
+      } catch (err: any) {
+        appendLocalLog('ERROR', 'bridge', `Erreur IPC startEvris : ${err?.message || err}`);
+      }
+    }
+
+    setLiveStatusLine('Synchronisation des modèles Qwen 3.5...');
     await syncBackend(apiUrl, false);
   };
 

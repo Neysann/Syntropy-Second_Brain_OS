@@ -81,4 +81,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Requête HTTP directe native sans restriction CORS
   fetchUrl: (options) =>
     ipcRenderer.invoke('fetch-url', typeof options === 'string' ? { url: options } : options),
+
+  // Lancement / Arrêt natif du moteur local E.V.R.I.S. (Ollama + FastAPI)
+  startEvris: (options) => ipcRenderer.invoke('evris-start', options || {}),
+  stopEvris: () => ipcRenderer.invoke('evris-stop'),
 });
