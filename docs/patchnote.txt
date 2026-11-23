@@ -2,6 +2,16 @@
 SYNTROPY OS — PATCHNOTES & JOURNAL DES VERSIONS
 ================================================================================
 
+#### [V3.0.0] - 2026-11-23 (Passage en Version Majeure 3.0 — Intégration d'E.V.R.I.S. & Application Desktop Ouverte à Tous)
+--------------------------------------------------------------------------------
+1. Ouverture Publique de l'Application Windows Desktop (.exe) sans Compte Super-Admin :
+- Suppression du verrouillage `isDesktop && !isAdmin` dans `src/components/layout/AppShell.tsx` : tout utilisateur connecté peut désormais installer et lancer Syntropy OS Desktop.
+- Activation de l'onglet **Paramètres → Application Desktop** pour tous les utilisateurs (y compris sur la version Web), avec téléchargement direct de `Syntropy-OS-Setup-3.0.0.exe` depuis GitHub Releases sans aucun droit administrateur requis.
+
+2. Passage en Version Majeure 3.0.0 (Intégration d'E.V.R.I.S. en cours) :
+- Mise à jour de `README.md`, `package.json`, `src/lib/core/version.ts` et activation de la fenêtre de nouveautés (`IS_MAJOR_RELEASE = true` dans `src/components/modals/WhatsNewModal.tsx`).
+- Publication du tag GitHub `v3.0.0` déclenchant la compilation automatique de l'installateur public `Syntropy-OS-Setup-3.0.0.exe` sur GitHub Actions.
+
 #### [V2.7.13] - 2026-11-23 (Bouton Manuel « Démarrer EVRIS » dans l'Interface E.V.R.I.S.)
 --------------------------------------------------------------------------------
 1. Contrôle Manuel de Connexion (`src/components/evris/EvrisHub.tsx`) :

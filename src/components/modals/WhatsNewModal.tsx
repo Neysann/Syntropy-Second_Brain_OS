@@ -26,8 +26,8 @@ export { CURRENT_VERSION };
  * Pour les correctifs de bugs ou les micro-changements (patchs réguliers), laisser à false
  * pour que la pop-up ne s'ouvre PAS au démarrage de l'utilisateur.
  */
-export const IS_MAJOR_RELEASE = false;
-export const LAST_MAJOR_VERSION = '2.6.40';
+export const IS_MAJOR_RELEASE = true;
+export const LAST_MAJOR_VERSION = '3.0.0';
 
 interface FeatureCard {
   icon: React.ElementType;
@@ -93,6 +93,16 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
 
   // Liste épurée des fonctionnalités majeures (points clés courts et visuels)
   const features: FeatureCard[] = [
+    {
+      icon: Sparkles,
+      color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
+      title: 'V3.0.0 — Arrivée d’E.V.R.I.S. & Desktop Ouvert à Tous',
+      points: [
+        '🤖 E.V.R.I.S. (intégration en cours) : nouvelle interface compagnon avec son Noyau ARC 25×25 animé et son bouton de démarrage manuel.',
+        '💻 Application Windows (.exe) accessible à tous : téléchargeable directement depuis Paramètres → Application Desktop, sans compte administrateur.',
+        '⚡ Architecture entièrement réorganisée et optimisée pour préparer le pont IA local complet.',
+      ],
+    },
     {
       icon: BookOpen,
       color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',

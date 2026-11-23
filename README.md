@@ -9,7 +9,8 @@
   <p>
     <a href="https://second-brain-os-e6a83.web.app"><img src="https://img.shields.io/badge/Live_Web_App-Syntropy_OS-6366f1?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Live Demo" /></a>
     <a href="https://github.com/Neysann/second-brain-os/releases/latest"><img src="https://img.shields.io/badge/Desktop_App-Windows_x64-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows Desktop App" /></a>
-    <a href="https://github.com/Neysann/second-brain-os/releases/latest"><img src="https://img.shields.io/badge/Release-v2.7.6-10b981?style=for-the-badge" alt="Version" /></a>
+    <a href="https://github.com/Neysann/second-brain-os/releases/latest"><img src="https://img.shields.io/badge/Release-v3.0.0-10b981?style=for-the-badge" alt="Version" /></a>
+    <img src="https://img.shields.io/badge/E.V.R.I.S._AI-Integration_in_Progress-22d7e8?style=for-the-badge" alt="EVRIS AI" />
   </p>
 
   <p>
@@ -41,7 +42,8 @@
 Grounded in Tiago Forte's **Second Brain** methodology and the **PARA framework** (*Projects, Areas, Resources, Archives*), Syntropy OS replaces fragmented tools with a cohesive Cloud + Local-First architecture available both on the Web and as a native Windows desktop application.
 
 - 🌐 **Live Web Application**: [https://second-brain-os-e6a83.web.app](https://second-brain-os-e6a83.web.app)
-- 💻 **Windows Desktop Installer (`.exe`)**: [Download from GitHub Releases](https://github.com/Neysann/second-brain-os/releases/latest)
+- 💻 **Windows Desktop Installer (`.exe`) — Open to Everyone**: [Download v3.0.0 from GitHub Releases](https://github.com/Neysann/second-brain-os/releases/latest) *(no administrator account required)*
+- 🤖 **What's New in v3.0.0**: Syntropy OS enters **v3.0** with the ongoing integration of **E.V.R.I.S.** — our local AI companion powered by a live 25×25 ARC LED Matrix Core, manual startup control, and a direct bridge to your tasks, notes, and system tools.
 
 ---
 
@@ -79,6 +81,10 @@ Grounded in Tiago Forte's **Second Brain** methodology and the **PARA framework*
 ### 7. 💰 Personal Finance & Budget Manager
 - **Income & Expense Ledger**: Categorized transaction logging with monthly cashflow summaries.
 - **Budget Caps & Alerts**: Set monthly spending thresholds per category with real-time visual consumption gauges and recurring subscription tracking.
+
+### 8. 🤖 E.V.R.I.S. — Local AI Companion *(v3.0 — Integration in Progress)*
+- **Interactive 25×25 ARC Core**: Live 625-LED matrix reacting dynamically to 8 states (`idle`, `listening`, `thinking`, `speaking`, `happy`, `alert`, `error`, `sleep`).
+- **Companion-First Workspace**: Dedicated `/evris` interface with manual connection control (**Démarrer EVRIS**), multi-tier local model routing (`AUTO`, `FAST 4B`, `PRO 9B`, `LIMITLESS`), long-term memory drawer, and direct Syntropy OS task/note commands.
 
 ---
 

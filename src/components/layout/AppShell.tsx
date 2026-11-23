@@ -249,70 +249,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     );
   }
 
-  // 3. Vérification de Sécurité Desktop au Lancement (V2.5.0) :
-  // Si l'application tourne dans Electron natif et que le compte n'est pas administrateur, verrouiller l'accès.
-  const isDesktop = typeof window !== 'undefined' && Boolean((window as any).electronAPI?.isDesktop);
-  const isAdmin = Boolean(user?.isAdmin || user?.role === 'admin' || (user?.email && isSiteAdmin(user.email)));
-
-  if (isDesktop && !isAdmin) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-zinc-950 text-zinc-100 relative overflow-hidden select-none p-4">
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="w-full max-w-md p-8 rounded-3xl border border-rose-500/40 bg-zinc-900/90 shadow-2xl shadow-rose-950/40 backdrop-blur-xl text-center space-y-6 animate-in fade-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 mx-auto flex items-center justify-center shadow-lg shadow-rose-500/10">
-            <ShieldAlert className="w-8 h-8 animate-pulse" />
-          </div>
-
-          <div className="space-y-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-wider">
-              Accès Réservé aux Administrateurs
-            </span>
-            <h1 className="text-xl font-black tracking-tight text-zinc-100">
-              Syntropy OS Desktop (v{APP_VERSION})
-            </h1>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Cette application Windows native (.exe) nécessite des droits d'administrateur système pour démarrer sur ce poste.
-            </p>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 text-left space-y-1">
-            <div className="text-[10px] text-zinc-500 uppercase font-semibold">Compte connecté</div>
-            <div className="text-xs font-mono font-medium text-zinc-200 truncate">{user.email || user.displayName || user.uid}</div>
-            <div className="flex items-center gap-1.5 pt-1 text-[10px] text-amber-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
-              <span>Rôle détecté : <strong className="font-mono">{user.role || 'user'}</strong> (non-administrateur)</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 pt-2">
-            <button
-              onClick={() => logout()}
-              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2 cursor-pointer transition-all"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Se connecter avec un compte Administrateur</span>
-            </button>
-
-            <button
-              onClick={() => {
-                if (typeof window !== 'undefined' && (window as any).electronAPI?.quitApp) {
-                  (window as any).electronAPI.quitApp();
-                } else {
-                  window.close();
-                }
-              }}
-              className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 flex items-center justify-center gap-2 cursor-pointer transition-all"
-            >
-              <Power className="w-4 h-4 text-zinc-400" />
-              <span>Quitter l'application</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // 3. Accès Desktop ouvert à tous les comptes (V3.0.0)
+  // L'application Windows native (.exe) est désormais accessible sans compte Super-Admin.
 
   return (
     <div

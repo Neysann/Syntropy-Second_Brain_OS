@@ -454,9 +454,7 @@ export default function SettingsPage() {
     { id: 'editor', label: 'Éditeur & Notes', sub: 'Mode d\'ouverture, stylet & sauvegarde', icon: FileText },
     { id: 'para', label: 'Productivité & PARA', sub: 'Vue par défaut, calendrier & priorités', icon: FolderGit2 },
     { id: 'data', label: 'Données & Profil', sub: 'Compte, Firestore, exports & imports', icon: Database },
-    ...(isDesktop
-      ? [{ id: 'desktop' as SettingsTab, label: 'Application Desktop', sub: 'Raccourcis, cache & démarrage', icon: Laptop, highlight: 'desktop' as const }]
-      : []),
+    { id: 'desktop', label: 'Application Desktop', sub: isDesktop ? 'Raccourcis, cache & démarrage' : 'Télécharger pour Windows (.exe)', icon: Laptop, highlight: 'desktop' },
     ...(isAdmin
       ? [{ id: 'admin' as SettingsTab, label: 'Console Admin', sub: 'Rôles, maintenance & audit', icon: Crown, highlight: 'admin' as const }]
       : []),
@@ -1610,18 +1608,106 @@ export default function SettingsPage() {
           )}
 
           {/* ======================================================= */}
-          {/* 5. APPLICATION DESKTOP (Electron)                       */}
+          {/* 5. APPLICATION DESKTOP (Téléchargement public & Electron)*/}
           {/* ======================================================= */}
-          {activeTab === 'desktop' && isDesktop && (
+          {activeTab === 'desktop' && (
             <div className="space-y-6 animate-in fade-in duration-200">
-              <DesktopSettingsSection
-                isDark={isDark}
-                onNotification={showNotification}
-                notes={notes}
-                tasks={tasks}
-                projects={projects}
-                folders={folders}
-              />
+              {isDesktop ? (
+                <DesktopSettingsSection
+                  isDark={isDark}
+                  onNotification={showNotification}
+                  notes={notes}
+                  tasks={tasks}
+                  projects={projects}
+                  folders={folders}
+                />
+              ) : (
+                <div
+                  className={`p-6 sm:p-8 rounded-3xl border space-y-6 ${
+                    isDark
+                      ? 'bg-zinc-900/70 border-zinc-800/80 shadow-2xl'
+                      : 'bg-white border-zinc-200 shadow-sm'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-500/35 text-cyan-400 flex items-center justify-center flex-shrink-0">
+                        <Laptop className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-lg font-extrabold tracking-tight">
+                            Syntropy OS Desktop — Windows x64
+                          </h2>
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            v{CURRENT_VERSION} • Ouvert à tous
+                          </span>
+                        </div>
+                        <p className={`text-xs mt-1 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                          Téléchargez gratuitement l&apos;application native Windows (.exe), sans compte administrateur requis.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className={`p-4 rounded-2xl border ${isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'}`}>
+                      <div className="font-bold flex items-center gap-1.5 text-cyan-400 mb-1">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        E.V.R.I.S. IA (v3.0)
+                      </div>
+                      <p className={isDark ? 'text-zinc-400' : 'text-zinc-600'}>
+                        Intégration en cours de l&apos;assistant IA local E.V.R.I.S. avec son Noyau ARC 25×25.
+                      </p>
+                    </div>
+                    <div className={`p-4 rounded-2xl border ${isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'}`}>
+                      <div className="font-bold flex items-center gap-1.5 text-purple-400 mb-1">
+                        <Zap className="w-3.5 h-3.5" />
+                        Quick Capture (Alt+Space)
+                      </div>
+                      <p className={isDark ? 'text-zinc-400' : 'text-zinc-600'}>
+                        Capture instantanée de tâches et notes depuis n&apos;importe quelle fenêtre Windows.
+                      </p>
+                    </div>
+                    <div className={`p-4 rounded-2xl border ${isDark ? 'bg-zinc-950/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'}`}>
+                      <div className="font-bold flex items-center gap-1.5 text-emerald-400 mb-1">
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Mises à jour auto
+                      </div>
+                      <p className={isDark ? 'text-zinc-400' : 'text-zinc-600'}>
+                        Synchronisation Cloud + sauvegardes locales, System Tray et notifications Windows.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    <a
+                      href={`https://github.com/Neysann/second-brain-os/releases/download/v${CURRENT_VERSION}/Syntropy-OS-Setup-${CURRENT_VERSION}.exe`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() =>
+                        showNotification(`Téléchargement de Syntropy-OS-Setup-${CURRENT_VERSION}.exe lancé !`)
+                      }
+                      className="px-5 py-3 rounded-2xl text-xs sm:text-sm font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/25 inline-flex items-center gap-2 transition-all"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Télécharger Syntropy-OS-Setup-{CURRENT_VERSION}.exe</span>
+                    </a>
+                    <a
+                      href="https://github.com/Neysann/second-brain-os/releases/latest"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`px-4 py-3 rounded-2xl text-xs font-semibold border inline-flex items-center gap-2 transition-all ${
+                        isDark
+                          ? 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white'
+                          : 'bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-zinc-950'
+                      }`}
+                    >
+                      <span>Voir toutes les releases GitHub</span>
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

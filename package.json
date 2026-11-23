@@ -1,6 +1,6 @@
 {
   "name": "syntropy-os",
-  "version": "2.7.13",
+  "version": "3.0.0",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
